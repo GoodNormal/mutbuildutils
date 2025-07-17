@@ -90,7 +90,6 @@ public class WorldTemplateManager {
         return world;
     }
     
-
     
     /**
      * 从菜单配置中获取对应的材料设置并应用到世界配置
