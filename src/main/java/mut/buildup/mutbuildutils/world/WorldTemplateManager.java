@@ -16,6 +16,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import org.bukkit.Location;
 
 public class WorldTemplateManager {
 
@@ -69,8 +70,13 @@ public class WorldTemplateManager {
             // 应用世界配置中的游戏规则，如果没有配置则使用默认值
             WorldConfig.applyGameRules(world, worldName);
             
-            // 创建世界配置（传递模板名称作为世界类型）
-            WorldConfig.createWorldSettings(worldName, playerName, templateName);
+            // 获取世界的真实出生点
+            Location spawnLocation = world.getSpawnLocation();
+            
+            // 创建世界配置（传递模板名称作为世界类型和出生点信息）
+            WorldConfig.createWorldSettings(worldName, playerName, templateName, 
+                spawnLocation.getX(), spawnLocation.getY(), spawnLocation.getZ(), 
+                spawnLocation.getYaw(), spawnLocation.getPitch());
             
             // 从菜单配置中获取对应的材料设置并应用到世界配置
             applyMenuMaterialToWorld(worldName, templateName);
@@ -83,6 +89,8 @@ public class WorldTemplateManager {
 
         return world;
     }
+    
+
     
     /**
      * 从菜单配置中获取对应的材料设置并应用到世界配置

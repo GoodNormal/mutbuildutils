@@ -322,6 +322,11 @@ public class WorldConfig {
     }
 
     public static void createWorldSettings(String worldName, String ownerName, String worldType) {
+        createWorldSettings(worldName, ownerName, worldType, 0, 64, 0, 0, 0);
+    }
+    
+    public static void createWorldSettings(String worldName, String ownerName, String worldType, 
+                                         double spawnX, double spawnY, double spawnZ, float yaw, float pitch) {
         if (!worldSettings.containsKey(worldName)) {
             List<String> allowedPlayers = new ArrayList<>();
             allowedPlayers.add(ownerName);
@@ -335,7 +340,7 @@ public class WorldConfig {
             int defaultCustomModelData = 0;
             
             WorldSettings newSettings = new WorldSettings(
-                0, 64, 0, 0, 0, GameMode.CREATIVE, new HashMap<>(), true, allowedPlayers,
+                spawnX, spawnY, spawnZ, yaw, pitch, GameMode.CREATIVE, new HashMap<>(), true, allowedPlayers,
                 mainResourcePack, baseResourcePack, defaultMenuMaterial, defaultCustomModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -345,11 +350,11 @@ public class WorldConfig {
             FileConfiguration config = new YamlConfiguration();
             
             // 设置配置内容
-            config.set("spawnpoint.x", 0);
-            config.set("spawnpoint.y", 64);
-            config.set("spawnpoint.z", 0);
-            config.set("spawnpoint.yaw", 0);
-            config.set("spawnpoint.pitch", 0);
+            config.set("spawnpoint.x", spawnX);
+            config.set("spawnpoint.y", spawnY);
+            config.set("spawnpoint.z", spawnZ);
+            config.set("spawnpoint.yaw", yaw);
+            config.set("spawnpoint.pitch", pitch);
             config.set("gamemode", "CREATIVE");
             config.set("load", true);
             config.set("players", ownerName);
@@ -627,6 +632,33 @@ public class WorldConfig {
         return settings != null ? settings.customModelData : 0;
     }
 
+    /**
+     * 更新世界的出生点位置
+     */
+    public static void updateSpawnLocation(String worldName, double x, double y, double z, float yaw, float pitch) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings != null) {
+            // 更新内存中的设置
+            WorldSettings newSettings = new WorldSettings(
+                x, y, z, yaw, pitch,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
+            );
+            worldSettings.put(worldName, newSettings);
+            
+            // 更新配置文件
+            FileConfiguration config = worldConfigs.get(worldName);
+            if (config != null) {
+                config.set("spawnpoint.x", x);
+                config.set("spawnpoint.y", y);
+                config.set("spawnpoint.z", z);
+                config.set("spawnpoint.yaw", yaw);
+                config.set("spawnpoint.pitch", pitch);
+                saveWorldConfig(worldName, config);
+            }
+        }
+    }
+
     public static class WorldSettings {
         private final double x;
         private final double y;
@@ -710,5 +742,10 @@ public class WorldConfig {
         public int getCustomModelData() {
             return customModelData;
         }
+    }
+
+    public static boolean isWorldOwner(String worldName, String name) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isWorldOwner'");
     }
 }

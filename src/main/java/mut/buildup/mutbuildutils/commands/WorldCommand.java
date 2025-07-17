@@ -12,8 +12,10 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jspecify.annotations.Nullable;
 
 import java.io.File;
+import java.lang.reflect.AccessFlag.Location;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,6 +54,8 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
                 return handleUnload(player, args);
             case "ownlist":
                 return handleOwnList(player, args);
+            case "setspawn":
+                return handleSetSpawn(player, args);
             default:
                 sendUsage(player);
                 return true;
@@ -426,6 +430,59 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleSetSpawn(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§c用法: /world setspawn <世界名>"));
+            return true;
+        }
+
+        String worldName = args[1];
+        World world = Bukkit.getWorld(worldName);
+
+        if (world == null) {
+            player.sendMessage(Component.text("§c世界 '" + worldName + "' 不存在或未加载！"));
+            return true;
+        }
+
+        // 检查权限：只有世界拥有者或管理员可以修改
+        if (!WorldConfig.isWorldOwner(worldName, player.getName()) && 
+            !player.hasPermission("mutbuildutils.world.admin") && !player.isOp()) {
+            player.sendMessage(Component.text("§c你没有权限修改此世界的出生点！只有世界拥有者或管理员可以修改。"));
+            return true;
+        }
+
+        // 检查玩家是否在目标世界中
+        if (!player.getWorld().equals(world)) {
+            player.sendMessage(Component.text("§c你必须在目标世界中才能设置出生点！"));
+            return true;
+        }
+
+        // 获取玩家当前位置
+        org.bukkit.Location location = player.getLocation();
+        double x = location.getX();
+        double y = location.getY();
+        double z = location.getZ();
+        float yaw = location.getYaw();
+        float pitch = location.getPitch();
+
+        try {
+            // 更新世界配置中的出生点
+            WorldConfig.updateSpawnLocation(worldName, x, y, z, yaw, pitch);
+            
+            // 同时更新Bukkit世界的出生点
+            world.setSpawnLocation((int) x, (int) y, (int) z);
+            
+            player.sendMessage(Component.text(String.format(
+                "§a成功设置世界 '%s' 的出生点为: %.1f, %.1f, %.1f (偏航: %.1f°, 俯仰: %.1f°)", 
+                worldName, x, y, z, yaw, pitch)));
+        } catch (Exception e) {
+            player.sendMessage(Component.text("§c设置出生点时发生错误：" + e.getMessage()));
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
     private void sendUsage(Player player) {
         player.sendMessage(Component.text("§6=== 世界命令帮助 ==="));
         player.sendMessage(Component.text("§f/world tp <世界名> §7- 传送到指定世界"));
@@ -444,6 +501,7 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(Component.text("§f/world deny <邀请者> §7- 拒绝邀请申请"));
         }
         player.sendMessage(Component.text("§f/world ownlist §7- 查看自己创建的世界"));
+        player.sendMessage(Component.text("§f/world setspawn <世界名> §7- 设置世界出生点（仅世界拥有者或管理员）"));
     }
 
     @Override
@@ -466,6 +524,7 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
                 subCommands.add("deny");
             }
             subCommands.add("kick"); // 所有玩家都可以使用kick（但需要是世界所有者）
+            subCommands.add("setspawn"); // 所有玩家都可以使用setspawn（但需要是世界所有者或管理员）
             return subCommands.stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());
@@ -476,6 +535,7 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             switch (args[0].toLowerCase()) {
                 case "tp":
                 case "unload":
+                case "setspawn":
                     // 只显示已加载的世界
                     worlds.addAll(Bukkit.getWorlds().stream()
                             .map(World::getName)
