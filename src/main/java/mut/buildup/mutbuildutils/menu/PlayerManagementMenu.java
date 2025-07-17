@@ -79,6 +79,10 @@ public class PlayerManagementMenu {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         
+        if (meta == null) {
+            return head; // 如果无法获取meta，返回默认头颅
+        }
+        
         meta.setOwningPlayer(player);
         meta.setDisplayName("§e" + player.getName());
         
@@ -161,7 +165,14 @@ public class PlayerManagementMenu {
     
     private static List<OfflinePlayer> getAllPlayersWhoJoined() {
         List<OfflinePlayer> players = new ArrayList<>();
-        File playerDataFolder = new File(Bukkit.getWorldContainer(), "world/playerdata");
+        
+        // 获取主世界名称（从levelname配置读取）
+        String mainWorldName = "world";
+        if (!Bukkit.getWorlds().isEmpty()) {
+            mainWorldName = Bukkit.getWorlds().get(0).getName();
+        }
+        
+        File playerDataFolder = new File(Bukkit.getWorldContainer(), mainWorldName + "/playerdata");
         
         if (playerDataFolder.exists() && playerDataFolder.isDirectory()) {
             File[] playerFiles = playerDataFolder.listFiles((dir, name) -> name.endsWith(".dat"));

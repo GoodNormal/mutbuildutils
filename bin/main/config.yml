@@ -1,0 +1,67 @@
+# MUTbuildUtils Plugin Configuration
+
+# 注意：世界配置现在存储在 world/config/ 目录中
+# 每个世界都有独立的配置文件：world/config/<世界名>.yml
+
+# Default world settings
+default-settings:
+  gamemode: SURVIVAL
+  difficulty: NORMAL
+  spawn-protection: 16
+  keep-inventory: false
+  pvp: true
+  animals: true
+  monsters: true
+  npc: true
+  fire-spread: true
+  lightning: true
+  
+# World loading settings
+world-loading:
+  load-on-startup: true
+  auto-save: true
+  save-interval: 300 # seconds
+  
+# Player permissions
+player-settings:
+  default-world-access: true
+  require-permission: false
+  
+# World creation settings
+world-creation:
+  default-generator: NORMAL
+  allow-structures: true
+  generate-decorations: true
+
+# Default world resource pack settings
+default-world-resourcepack:
+  main: "dd"  # 默认世界主资源包缩写，留空表示不使用
+  base: "base"     # 基础资源包缩写，所有世界通用
+
+# Default world spawn point settings
+# 注意：这些值仅用于初始创建配置，实际会使用世界的真实出生点
+default-world-spawnpoint:
+  x: 0
+  y: 64
+  z: 0
+  yaw: 0
+  pitch: 0
+  
+invite-system:
+  expire-time: 300 # seconds
+  max-pending-invites: 10
+  require-approval: true
+  
+# Messages
+messages:
+  prefix: "&7[&6MUTbuildUtils&7] &r"
+  no-permission: "&c你没有权限执行此命令！"
+  world-not-found: "&c世界不存在！"
+  player-not-found: "&c玩家不在线！"
+  world-created: "&a世界创建成功！"
+  world-loaded: "&a世界加载成功！"
+  world-unloaded: "&a世界卸载成功！"
+  invite-sent: "&a邀请已发送！"
+  invite-accepted: "&a邀请已接受！"
+  invite-denied: "&c邀请已拒绝！"
+

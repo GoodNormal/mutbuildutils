@@ -79,17 +79,24 @@ public class WorldPlayerMenu {
             lore.add(ChatColor.GRAY + "玩家: " + playerName);
             
             OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
-            if (offlinePlayer.isOnline()) {
-                lore.add(ChatColor.GREEN + "状态: 在线");
+            
+            // 检查玩家是否真实存在（曾经加入过服务器）
+            if (offlinePlayer != null && (offlinePlayer.hasPlayedBefore() || offlinePlayer.isOnline())) {
+                if (offlinePlayer.isOnline()) {
+                    lore.add(ChatColor.GREEN + "状态: 在线");
+                } else {
+                    lore.add(ChatColor.GRAY + "状态: 离线");
+                }
+                
+                // 设置玩家头颅
+                meta.setOwningPlayer(offlinePlayer);
             } else {
-                lore.add(ChatColor.GRAY + "状态: 离线");
+                lore.add(ChatColor.RED + "状态: 未知玩家");
+                // 对于未知玩家，不设置头颅所有者，使用默认头颅
             }
             
             lore.add(ChatColor.YELLOW + "右键点击移除此玩家的世界权限");
             meta.setLore(lore);
-            
-            // 设置玩家头颅
-            meta.setOwningPlayer(offlinePlayer);
         }
         
         head.setItemMeta(meta);

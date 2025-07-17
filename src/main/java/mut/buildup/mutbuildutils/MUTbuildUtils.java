@@ -110,19 +110,25 @@ public final class MUTbuildUtils extends JavaPlugin {
         String mainWorldName = Bukkit.getWorlds().isEmpty() ? "world" : Bukkit.getWorlds().get(0).getName();
         getLogger().info("检测到主世界名称: " + mainWorldName);
         
-        // 构建默认世界列表（基于主世界名称）
-        String[] defaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
+        // 构建默认世界列表（基于主世界名称），但只为实际存在的世界创建配置
+        String[] potentialDefaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
         
         // 检查默认世界并确保它们有配置
-        for (String defaultWorld : defaultWorlds) {
-            World world = Bukkit.getWorld(defaultWorld);
-            if (world != null && !WorldConfig.isWorldLoaded(defaultWorld)) {
-                getLogger().info("为默认世界创建配置: " + defaultWorld);
-                // 获取世界的真实出生点
-                Location spawnLoc = world.getSpawnLocation();
-                WorldConfig.createWorldSettings(defaultWorld, "Server", null,
-                        spawnLoc.getX(), spawnLoc.getY(), spawnLoc.getZ(),
-                        spawnLoc.getYaw(), spawnLoc.getPitch());
+        for (String defaultWorld : potentialDefaultWorlds) {
+            // 检查世界文件夹是否存在，确保服务器真的开启了这个世界
+            File worldFolder = new File(Bukkit.getWorldContainer(), defaultWorld);
+            if (worldFolder.exists() && worldFolder.isDirectory()) {
+                World world = Bukkit.getWorld(defaultWorld);
+                if (world != null && !WorldConfig.isWorldLoaded(defaultWorld)) {
+                    getLogger().info("为默认世界创建配置: " + defaultWorld);
+                    // 获取世界的真实出生点
+                    Location spawnLoc = world.getSpawnLocation();
+                    WorldConfig.createWorldSettings(defaultWorld, "Server", null,
+                            spawnLoc.getX(), spawnLoc.getY(), spawnLoc.getZ(),
+                            spawnLoc.getYaw(), spawnLoc.getPitch());
+                }
+            } else {
+                getLogger().info("跳过不存在的世界: " + defaultWorld);
             }
         }
     }

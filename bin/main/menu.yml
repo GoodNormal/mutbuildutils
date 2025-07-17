@@ -1,0 +1,110 @@
+# 世界创建菜单配置文件
+# 菜单大小 (必须是9的倍数，最大54)
+menu_size: 54
+
+# 世界模板配置
+worlds:
+  - slot: 10
+    material: GRASS_BLOCK
+    name: "§a普通世界"
+    lore:
+      - "§7创建一个普通的主世界"
+      - "§7适合建造和生存"
+      - "§e点击创建"
+    world: "normal"
+    
+  - slot: 12
+    material: STONE
+    name: "§8超平坦世界"
+    lore:
+      - "§7创建一个超平坦世界"
+      - "§7适合建造和创造"
+      - "§e点击创建"
+    world: "flat"
+    
+  - slot: 14
+    material: NETHERRACK
+    name: "§c下界世界"
+    lore:
+      - "§7创建一个下界世界"
+      - "§7充满挑战和危险"
+      - "§e点击创建"
+    world: "nether"
+    
+  - slot: 16
+    material: END_STONE
+    name: "§d末地世界"
+    lore:
+      - "§7创建一个末地世界"
+      - "§7神秘的末地环境"
+      - "§e点击创建"
+    world: "end"
+    
+  - slot: 28
+    material: WATER_BUCKET
+    name: "§b海洋世界"
+    lore:
+      - "§7创建一个海洋世界"
+      - "§7大部分区域被水覆盖"
+      - "§e点击创建"
+    world: "ocean"
+    
+  - slot: 30
+    material: SAND
+    name: "§e沙漠世界"
+    lore:
+      - "§7创建一个沙漠世界"
+      - "§7干燥炎热的环境"
+      - "§e点击创建"
+    world: "desert"
+    
+  - slot: 32
+    material: SNOW_BLOCK
+    name: "§f雪地世界"
+    lore:
+      - "§7创建一个雪地世界"
+      - "§7寒冷的冰雪环境"
+      - "§e点击创建"
+    world: "snow"
+    
+  - slot: 34
+    material: OAK_SAPLING
+    name: "§2森林世界"
+    lore:
+      - "§7创建一个森林世界"
+      - "§7茂密的森林环境"
+      - "§e点击创建"
+    world: "forest"
+    
+  # CustomModelData 示例 - 使用整数
+  - slot: 19
+    material: DIAMOND
+    name: "§b自定义模型世界 1"
+    lore:
+      - "§7使用自定义模型的世界"
+      - "§7CustomModelData: 1001"
+      - "§e点击创建"
+    world: "custom1"
+    custom_model_data: 1001
+    
+  # CustomModelData 示例 - 使用字符串
+  - slot: 21
+    material: EMERALD
+    name: "§a自定义模型世界 2"
+    lore:
+      - "§7使用自定义模型的世界"
+      - "§7CustomModelData: 2002 (字符串)"
+      - "§e点击创建"
+    world: "custom2"
+    custom_model_data: "2002"
+    
+  # CustomModelData 示例 - 使用浮点数
+  - slot: 23
+    material: GOLD_INGOT
+    name: "§6自定义模型世界 3"
+    lore:
+      - "§7使用自定义模型的世界"
+      - "§7CustomModelData: 3003.5 (浮点数转整数)"
+      - "§e点击创建"
+    world: "custom3"
+    custom_model_data: 3003.5

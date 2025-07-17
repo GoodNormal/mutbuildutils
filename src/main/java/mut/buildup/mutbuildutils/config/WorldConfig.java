@@ -63,14 +63,20 @@ public class WorldConfig {
         }
         System.out.println("[WorldConfig] 检测到主世界名称: " + mainWorldName);
         
-        // 构建默认世界列表（基于主世界名称）
-        String[] defaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
+        // 构建默认世界列表（基于主世界名称），但只为实际存在的世界创建配置
+        String[] potentialDefaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
         
-        for (String worldName : defaultWorlds) {
-            File configFile = new File(worldConfigDir, worldName + ".yml");
-            if (!configFile.exists()) {
-                System.out.println("[WorldConfig] 为默认世界创建配置文件: " + worldName);
-                createDefaultWorldConfig(worldName, "Server");
+        for (String worldName : potentialDefaultWorlds) {
+            // 检查世界文件夹是否存在，确保服务器真的开启了这个世界
+            File worldFolder = new File(org.bukkit.Bukkit.getWorldContainer(), worldName);
+            if (worldFolder.exists() && worldFolder.isDirectory()) {
+                File configFile = new File(worldConfigDir, worldName + ".yml");
+                if (!configFile.exists()) {
+                    System.out.println("[WorldConfig] 为默认世界创建配置文件: " + worldName);
+                    createDefaultWorldConfig(worldName, "Server");
+                }
+            } else {
+                System.out.println("[WorldConfig] 跳过不存在的世界: " + worldName);
             }
         }
     }
@@ -144,11 +150,11 @@ public class WorldConfig {
         boolean doImmediateRespawn = false;
         int spawnRadius = 10;
         
-        if (worldName.equals("world")) {
+        if (worldName.equals(mainWorldName)) {
             // 主世界的特殊设置
             keepInventory = mainConfig != null ? mainConfig.getBoolean("default-settings.keep-inventory", false) : false;
             spawnRadius = mainConfig != null ? mainConfig.getInt("default-settings.spawn-protection", 10) : 10;
-        } else if (worldName.equals("world_nether") || worldName.equals("world_the_end")) {
+        } else if (worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
             // 下界和末地的特殊设置
             keepInventory = true;
             doImmediateRespawn = true;
@@ -175,9 +181,9 @@ public class WorldConfig {
         
         // 设置默认菜单材料配置
         String menuMaterial = "GRASS_BLOCK";
-        if (worldName.equals("world_nether")) {
+        if (worldName.equals(mainWorldName + "_nether")) {
             menuMaterial = "NETHERRACK";
-        } else if (worldName.equals("world_the_end")) {
+        } else if (worldName.equals(mainWorldName + "_the_end")) {
             menuMaterial = "END_STONE";
         }
         
@@ -314,6 +320,13 @@ public class WorldConfig {
     public static boolean canPlayerEnterWorld(String worldName, String playerName) {
         WorldSettings settings = worldSettings.get(worldName);
         if (settings == null) return true;
+        
+        // 检查玩家是否是世界所有者
+        if (isWorldOwner(worldName, playerName)) {
+            return true;
+        }
+        
+        // 检查玩家是否在允许列表中
         return settings.allowedPlayers.isEmpty() || settings.allowedPlayers.contains(playerName);
     }
 

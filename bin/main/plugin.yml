@@ -1,0 +1,95 @@
+name: MUTbuildUtils
+version: '${version}'
+main: mut.buildup.mutbuildutils.MUTbuildUtils
+api-version: '1.21'
+
+commands:
+  worldcreate:
+    description: 创建新世界
+    usage: /<command> <世界名> <世界类型>
+    permission: mutbuildutils.worldcreate
+    aliases: [wc]
+  world:
+    description: 世界管理命令
+    usage: |
+      /<command> tp <世界名> - 传送到指定世界
+      /<command> invite <被邀请玩家> <目标世界> <审核OP> - 邀请玩家进入指定世界
+      /<command> approve <邀请者> - 同意邀请申请
+      /<command> deny <邀请者> - 拒绝邀请申请
+      /<command> load <世界名> - 加载世界
+      /<command> unload <世界名> - 卸载世界
+      /<command> ownlist - 查看自己创建的世界
+    permission: mutbuildutils.world
+    aliases: [w]
+  mutbuild:
+    description: 插件管理命令
+    usage: |
+      /<command> reload - 重载插件配置
+      /<command> player - 打开玩家管理菜单
+    permission: mutbuildutils.admin
+    aliases: [mb]
+  worldresourcepack:
+    description: 世界资源包管理命令
+    usage: |
+      /<command> refresh - 刷新所有资源包的哈希值
+      /<command> create <缩写> <URL> - 添加新的主资源包
+      /<command> set <缩写> <世界名> - 为世界设置资源包
+      /<command> add <缩写> <玩家名> - 为玩家添加资源包
+    permission: mutbuildutils.resourcepack.admin
+    aliases: [wrp]
+  resourcepacktest:
+    description: 资源包测试命令
+    usage: |
+      /<command> base - 测试基础资源包
+      /<command> main <缩写> - 测试指定主资源包
+      /<command> world - 测试当前世界的资源包配置
+      /<command> status - 显示资源包配置状态
+    permission: mutbuildutils.resourcepack.test
+    aliases: [rptest]
+
+permissions:
+  mutbuildutils.worldcreate:
+    description: 允许创建新世界
+    default: true
+  mutbuildutils.world:
+    description: 允许使用世界传送命令
+    default: true
+  mutbuildutils.world.invite:
+    description: 允许邀请玩家进入世界
+    default: true
+  mutbuildutils.world.admin:
+    description: 允许管理世界邀请
+    default: op
+  mutbuildutils.world.load:
+    description: 允许加载世界
+    default: op
+  mutbuildutils.world.unload:
+    description: 允许卸载世界
+    default: op
+  mutbuildutils.admin:
+    description: 插件管理权限
+    default: op
+  mutbuildutils.reload:
+    description: 允许使用/mutbuild reload命令
+    default: op
+  mutbuildutils.world.create:
+    description: 允许接收世界创建成功的广播消息
+    default: op
+  mutbuildutils.player:
+    description: 允许使用/mutbuild player命令查看玩家管理菜单
+    default: op
+  mutbuildutils.resourcepack.admin:
+    description: 允许管理世界资源包
+    default: op
+  mutbuildutils.resourcepack.use:
+    description: 允许使用资源包功能
+    default: true
+  mutbuildutils.resourcepack.test:
+    description: 允许使用资源包测试命令
+    default: op
+prefix: MUT开发组
+load: STARTUP
+authors: [ good_normal ]
+description: a template world create for mut
+website: www.mutmc.live
+
