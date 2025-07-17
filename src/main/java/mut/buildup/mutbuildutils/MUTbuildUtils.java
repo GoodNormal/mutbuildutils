@@ -15,6 +15,7 @@ import mut.buildup.mutbuildutils.menu.OwnWorldMenuListener;
 import mut.buildup.mutbuildutils.menu.WorldPlayerMenuListener;
 import mut.buildup.mutbuildutils.world.WorldTemplateManager;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -48,6 +49,9 @@ public final class MUTbuildUtils extends JavaPlugin {
         
         // 初始化世界模板管理器
         worldTemplateManager = new WorldTemplateManager(this);
+        
+        // 延迟检查默认世界配置，确保能获取到正确的主世界名称
+        Bukkit.getScheduler().runTaskLater(this, this::checkDefaultWorldConfigs, 10L); // 延迟0.5秒检查
         
         // 注册命令
         getCommand("worldcreate").setExecutor(new WorldCreateCommand());
@@ -98,7 +102,39 @@ public final class MUTbuildUtils extends JavaPlugin {
         return worldTemplateManager;
     }
 
+    /**
+     * 检查默认世界配置
+     */
+    private void checkDefaultWorldConfigs() {
+        // 获取主世界名称（从server.properties中的level-name读取）
+        String mainWorldName = Bukkit.getWorlds().isEmpty() ? "world" : Bukkit.getWorlds().get(0).getName();
+        getLogger().info("检测到主世界名称: " + mainWorldName);
+        
+        // 构建默认世界列表（基于主世界名称）
+        String[] defaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
+        
+        // 检查默认世界并确保它们有配置
+        for (String defaultWorld : defaultWorlds) {
+            World world = Bukkit.getWorld(defaultWorld);
+            if (world != null && !WorldConfig.isWorldLoaded(defaultWorld)) {
+                getLogger().info("为默认世界创建配置: " + defaultWorld);
+                // 获取世界的真实出生点
+                Location spawnLoc = world.getSpawnLocation();
+                WorldConfig.createWorldSettings(defaultWorld, "Server", null,
+                        spawnLoc.getX(), spawnLoc.getY(), spawnLoc.getZ(),
+                        spawnLoc.getYaw(), spawnLoc.getPitch());
+            }
+        }
+    }
+    
+    /**
+     * 加载配置中标记为自动加载的世界
+     */
     private void loadConfiguredWorlds() {
+        // 再次检查默认世界配置，确保它们存在
+        checkDefaultWorldConfigs();
+        
+        // 加载配置中标记为自动加载的世界
         List<String> worldsToLoad = WorldConfig.getWorldsToLoad();
         getLogger().info("检测到 " + worldsToLoad.size() + " 个需要自动加载的世界: " + worldsToLoad);
         

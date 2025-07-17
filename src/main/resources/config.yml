@@ -8,6 +8,7 @@ default-settings:
   gamemode: SURVIVAL
   difficulty: NORMAL
   spawn-protection: 16
+  keep-inventory: false
   pvp: true
   animals: true
   monsters: true
@@ -34,10 +35,11 @@ world-creation:
 
 # Default world resource pack settings
 default-world-resourcepack:
-  main: "DD"  # 默认世界主资源包缩写
+  main: "dd"  # 默认世界主资源包缩写，留空表示不使用
   base: "base"     # 基础资源包缩写，所有世界通用
 
 # Default world spawn point settings
+# 注意：这些值仅用于初始创建配置，实际会使用世界的真实出生点
 default-world-spawnpoint:
   x: 0
   y: 64

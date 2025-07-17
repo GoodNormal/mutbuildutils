@@ -56,8 +56,15 @@ public class WorldConfig {
      * 为默认世界创建配置文件
      */
     private static void createDefaultWorldConfigs() {
-        // 默认世界列表
-        String[] defaultWorlds = {"world", "world_nether", "world_the_end"};
+        // 获取主世界名称（从server.properties中的level-name读取）
+        String mainWorldName = "world";
+        if (!org.bukkit.Bukkit.getWorlds().isEmpty()) {
+            mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
+        }
+        System.out.println("[WorldConfig] 检测到主世界名称: " + mainWorldName);
+        
+        // 构建默认世界列表（基于主世界名称）
+        String[] defaultWorlds = {mainWorldName, mainWorldName + "_nether", mainWorldName + "_the_end"};
         
         for (String worldName : defaultWorlds) {
             File configFile = new File(worldConfigDir, worldName + ".yml");
@@ -70,24 +77,42 @@ public class WorldConfig {
     
     /**
      * 创建默认世界配置
+     * @param worldName 世界名称
+     * @param ownerName 创建者
      */
     private static void createDefaultWorldConfig(String worldName, String ownerName) {
         File configFile = new File(worldConfigDir, worldName + ".yml");
         FileConfiguration config = new YamlConfiguration();
         
-        // 从主配置文件读取默认出生点设置
+        // 获取主世界名称（从已加载的世界列表中获取第一个世界）
+        String mainWorldName = "world";
+        if (!org.bukkit.Bukkit.getWorlds().isEmpty()) {
+            mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
+        }
+        
+        // 尝试获取世界的真实出生点
+        World world = org.bukkit.Bukkit.getWorld(worldName);
         double defaultX = 0;
         double defaultY = 64;
         double defaultZ = 0;
         float defaultYaw = 0;
         float defaultPitch = 0;
         
-        if (mainConfig != null) {
-            defaultX = mainConfig.getDouble("default-world-spawnpoint.x", 0);
-            defaultY = mainConfig.getDouble("default-world-spawnpoint.y", 64);
-            defaultZ = mainConfig.getDouble("default-world-spawnpoint.z", 0);
-            defaultYaw = (float) mainConfig.getDouble("default-world-spawnpoint.yaw", 0);
-            defaultPitch = (float) mainConfig.getDouble("default-world-spawnpoint.pitch", 0);
+        if (world != null) {
+            // 如果世界已加载，使用真实出生点
+            Location spawnLoc = world.getSpawnLocation();
+            defaultX = spawnLoc.getX();
+            defaultY = spawnLoc.getY();
+            defaultZ = spawnLoc.getZ();
+            defaultYaw = spawnLoc.getYaw();
+            defaultPitch = spawnLoc.getPitch();
+        } else if (mainConfig != null) {
+            // 否则从主配置文件读取默认出生点设置
+            defaultX = mainConfig.getDouble("default-settings.spawn.x", 0);
+            defaultY = mainConfig.getDouble("default-settings.spawn.y", 64);
+            defaultZ = mainConfig.getDouble("default-settings.spawn.z", 0);
+            defaultYaw = (float) mainConfig.getDouble("default-settings.spawn.yaw", 0);
+            defaultPitch = (float) mainConfig.getDouble("default-settings.spawn.pitch", 0);
         }
         
         // 设置配置内容
@@ -96,20 +121,45 @@ public class WorldConfig {
         config.set("spawnpoint.z", defaultZ);
         config.set("spawnpoint.yaw", defaultYaw);
         config.set("spawnpoint.pitch", defaultPitch);
-        config.set("gamemode", "SURVIVAL"); // 默认世界使用生存模式
+        
+        // 根据世界类型设置游戏模式
+        String gameMode = "SURVIVAL";
+        if (worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
+            gameMode = "SURVIVAL"; // 下界和末地使用生存模式
+        } else if (worldName.startsWith(mainWorldName + "_")) {
+            gameMode = "CREATIVE"; // 其他自定义世界使用创造模式
+        }
+        
+        config.set("gamemode", gameMode);
         config.set("load", true); // 默认世界自动加载
         config.set("players", ""); // 默认世界允许所有玩家进入
         config.set("owner", ownerName);
         config.set("description", "默认世界 - " + worldName);
         config.set("created", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
         
-        // 设置默认游戏规则
-        config.set("gamerules.keepInventory", false);
+        // 设置默认游戏规则 - 根据世界类型设置不同的规则
+        boolean keepInventory = false;
+        boolean doMobSpawning = true;
+        boolean announceAdvancements = true;
+        boolean doImmediateRespawn = false;
+        int spawnRadius = 10;
+        
+        if (worldName.equals("world")) {
+            // 主世界的特殊设置
+            keepInventory = mainConfig != null ? mainConfig.getBoolean("default-settings.keep-inventory", false) : false;
+            spawnRadius = mainConfig != null ? mainConfig.getInt("default-settings.spawn-protection", 10) : 10;
+        } else if (worldName.equals("world_nether") || worldName.equals("world_the_end")) {
+            // 下界和末地的特殊设置
+            keepInventory = true;
+            doImmediateRespawn = true;
+        }
+        
+        config.set("gamerules.keepInventory", keepInventory);
         config.set("gamerules.doDaylightCycle", true);
-        config.set("gamerules.doMobSpawning", true);
-        config.set("gamerules.announceAdvancements", true);
-        config.set("gamerules.doImmediateRespawn", false);
-        config.set("gamerules.spawnRadius", 10);
+        config.set("gamerules.doMobSpawning", doMobSpawning);
+        config.set("gamerules.announceAdvancements", announceAdvancements);
+        config.set("gamerules.doImmediateRespawn", doImmediateRespawn);
+        config.set("gamerules.spawnRadius", spawnRadius);
         
         // 设置资源包配置 - 从主配置文件读取默认世界资源包设置
         String defaultMainPack = "";
@@ -124,7 +174,14 @@ public class WorldConfig {
         config.set("resourcepack.base", defaultBasePack);
         
         // 设置默认菜单材料配置
-        config.set("menu_material.material", "GRASS_BLOCK");
+        String menuMaterial = "GRASS_BLOCK";
+        if (worldName.equals("world_nether")) {
+            menuMaterial = "NETHERRACK";
+        } else if (worldName.equals("world_the_end")) {
+            menuMaterial = "END_STONE";
+        }
+        
+        config.set("menu_material.material", menuMaterial);
         config.set("menu_material.custom_model_data", 0);
         
         worldConfigs.put(worldName, config);
@@ -132,9 +189,18 @@ public class WorldConfig {
         
         // 创建内存中的设置
         List<String> allowedPlayers = new ArrayList<>(); // 空列表表示所有玩家都可以进入
+        Map<GameRule<?>, Object> gameRules = new HashMap<>();
+        gameRules.put(GameRule.KEEP_INVENTORY, keepInventory);
+        gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, true);
+        gameRules.put(GameRule.DO_MOB_SPAWNING, doMobSpawning);
+        gameRules.put(GameRule.ANNOUNCE_ADVANCEMENTS, announceAdvancements);
+        gameRules.put(GameRule.DO_IMMEDIATE_RESPAWN, doImmediateRespawn);
+        gameRules.put(GameRule.SPAWN_RADIUS, spawnRadius);
+        
         WorldSettings newSettings = new WorldSettings(
-            0, 64, 0, 0, 0, GameMode.SURVIVAL, new HashMap<>(), true, allowedPlayers,
-            defaultMainPack, defaultBasePack, "GRASS_BLOCK", 0
+            defaultX, defaultY, defaultZ, defaultYaw, defaultPitch, 
+            GameMode.valueOf(gameMode), gameRules, true, allowedPlayers,
+            defaultMainPack, defaultBasePack, menuMaterial, 0
         );
         worldSettings.put(worldName, newSettings);
     }
@@ -328,8 +394,19 @@ public class WorldConfig {
     public static void createWorldSettings(String worldName, String ownerName, String worldType, 
                                          double spawnX, double spawnY, double spawnZ, float yaw, float pitch) {
         if (!worldSettings.containsKey(worldName)) {
+            // 获取主世界名称
+            String mainWorldName = "world";
+            if (!org.bukkit.Bukkit.getWorlds().isEmpty()) {
+                mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
+            }
+            
             List<String> allowedPlayers = new ArrayList<>();
-            allowedPlayers.add(ownerName);
+            // 对于默认世界，允许所有玩家进入
+            if (worldName.equals(mainWorldName) || worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
+                // 默认世界不限制玩家
+            } else {
+                allowedPlayers.add(ownerName);
+            }
             
             // 根据世界类型确定资源包
             String mainResourcePack = getResourcePackKeyByWorldType(worldType);
@@ -339,8 +416,38 @@ public class WorldConfig {
             String defaultMenuMaterial = getDefaultMenuMaterialByWorldType(worldType);
             int defaultCustomModelData = 0;
             
+            // 根据世界类型设置游戏模式
+            GameMode gameMode = GameMode.CREATIVE;
+            if (worldName.equals(mainWorldName) || worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
+                gameMode = GameMode.SURVIVAL; // 默认世界使用生存模式
+            }
+            
+            // 设置游戏规则
+            Map<GameRule<?>, Object> gameRules = new HashMap<>();
+            if (worldName.equals(mainWorldName)) {
+                // 主世界
+                gameRules.put(GameRule.KEEP_INVENTORY, mainConfig != null ? mainConfig.getBoolean("default-settings.keep-inventory", false) : false);
+                gameRules.put(GameRule.SPAWN_RADIUS, 16);
+                gameRules.put(GameRule.DO_IMMEDIATE_RESPAWN, false);
+            } else if (worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
+                // 下界和末地
+                gameRules.put(GameRule.KEEP_INVENTORY, true);
+                gameRules.put(GameRule.DO_IMMEDIATE_RESPAWN, true);
+                gameRules.put(GameRule.SPAWN_RADIUS, 0);
+            } else {
+                // 自定义世界
+                gameRules.put(GameRule.KEEP_INVENTORY, true);
+                gameRules.put(GameRule.DO_IMMEDIATE_RESPAWN, true);
+                gameRules.put(GameRule.SPAWN_RADIUS, 0);
+            }
+            
+            // 通用游戏规则
+            gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, true);
+            gameRules.put(GameRule.DO_MOB_SPAWNING, worldName.equals(mainWorldName) ? true : false);
+            gameRules.put(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            
             WorldSettings newSettings = new WorldSettings(
-                spawnX, spawnY, spawnZ, yaw, pitch, GameMode.CREATIVE, new HashMap<>(), true, allowedPlayers,
+                spawnX, spawnY, spawnZ, yaw, pitch, gameMode, gameRules, true, allowedPlayers,
                 mainResourcePack, baseResourcePack, defaultMenuMaterial, defaultCustomModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -355,20 +462,35 @@ public class WorldConfig {
             config.set("spawnpoint.z", spawnZ);
             config.set("spawnpoint.yaw", yaw);
             config.set("spawnpoint.pitch", pitch);
-            config.set("gamemode", "CREATIVE");
+            config.set("gamemode", gameMode.toString());
             config.set("load", true);
-            config.set("players", ownerName);
+            
+            // 设置玩家和所有者信息
+            if (!allowedPlayers.isEmpty()) {
+                config.set("players", String.join(",", allowedPlayers));
+            } else {
+                config.set("players", ""); // 空字符串表示所有玩家都可以进入
+            }
+            
             config.set("owner", ownerName);
-            config.set("description", "由 " + ownerName + " 创建的世界");
+            
+            // 设置描述和创建时间
+            if (worldName.equals(mainWorldName)) {
+                config.set("description", "主世界");
+            } else if (worldName.equals(mainWorldName + "_nether")) {
+                config.set("description", "下界");
+            } else if (worldName.equals(mainWorldName + "_the_end")) {
+                config.set("description", "末地");
+            } else {
+                config.set("description", "由 " + ownerName + " 创建的世界");
+            }
+            
             config.set("created", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
             
-            // 设置默认游戏规则
-            config.set("gamerules.keepInventory", true);
-            config.set("gamerules.doDaylightCycle", true);
-            config.set("gamerules.doMobSpawning", false);
-            config.set("gamerules.announceAdvancements", false);
-            config.set("gamerules.doImmediateRespawn", true);
-            config.set("gamerules.spawnRadius", 0);
+            // 设置游戏规则
+            for (Map.Entry<GameRule<?>, Object> entry : gameRules.entrySet()) {
+                config.set("gamerules." + entry.getKey().getName(), entry.getValue());
+            }
             
             // 设置资源包配置
             config.set("resourcepack.main", mainResourcePack != null ? mainResourcePack : "");
@@ -388,6 +510,17 @@ public class WorldConfig {
      */
     private static String getResourcePackKeyByWorldType(String worldType) {
         if (worldType == null) return null;
+        
+        // 获取主世界名称
+        String mainWorldName = "world";
+        if (!org.bukkit.Bukkit.getWorlds().isEmpty()) {
+            mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
+        }
+        
+        // 检查是否为默认世界（主世界、下界、末地）
+        if (worldType.equals(mainWorldName) || worldType.equals(mainWorldName + "_nether") || worldType.equals(mainWorldName + "_the_end")) {
+            return null; // 默认世界不设置特定资源包
+        }
         
         switch (worldType.toLowerCase()) {
             case "normal":
@@ -414,6 +547,21 @@ public class WorldConfig {
      */
     private static String getDefaultMenuMaterialByWorldType(String worldType) {
         if (worldType == null) return "GRASS_BLOCK";
+        
+        // 获取主世界名称
+        String mainWorldName = "world";
+        if (!org.bukkit.Bukkit.getWorlds().isEmpty()) {
+            mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
+        }
+        
+        // 检查是否为默认世界（主世界、下界、末地）
+        if (worldType.equals(mainWorldName)) {
+            return "GRASS_BLOCK";
+        } else if (worldType.equals(mainWorldName + "_nether")) {
+            return "NETHERRACK";
+        } else if (worldType.equals(mainWorldName + "_the_end")) {
+            return "END_STONE";
+        }
         
         switch (worldType.toLowerCase()) {
             case "normal":
@@ -501,7 +649,20 @@ public class WorldConfig {
         if (!worldConfigDir.exists()) {
             worldConfigDir.mkdirs();
         }
-        reloadConfig();
+        
+        // 加载主配置文件
+        File mainConfigFile = new File(plugin.getDataFolder(), "config.yml");
+        if (mainConfigFile.exists()) {
+            mainConfig = YamlConfiguration.loadConfiguration(mainConfigFile);
+        }
+        
+        // 等待服务器完成世界加载，确保能获取到正确的主世界名称
+        // 注意：此时可能还没有完全加载所有世界，所以在MUTbuildUtils.java中会再次检查
+        org.bukkit.Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            // 确保默认世界配置文件存在
+            createDefaultWorldConfigs();
+            reloadConfig();
+        }, 1L); // 延迟1tick执行，确保世界已加载
     }
     
     /**
@@ -744,8 +905,16 @@ public class WorldConfig {
         }
     }
 
-    public static boolean isWorldOwner(String worldName, String name) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isWorldOwner'");
+    /**
+     * 检查玩家是否为世界拥有者
+     */
+    public static boolean isWorldOwner(String worldName, String playerName) {
+        FileConfiguration config = worldConfigs.get(worldName);
+        if (config == null) {
+            return false;
+        }
+        
+        String owner = config.getString("owner", "");
+        return owner.equals(playerName);
     }
 }
