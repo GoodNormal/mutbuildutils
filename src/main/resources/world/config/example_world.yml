@@ -1,0 +1,43 @@
+# 世界配置文件示例
+# 文件名格式: <世界名>.yml
+
+# 出生点坐标
+spawnpoint:
+  x: 0
+  y: 64
+  z: 0
+  yaw: 0         # 视角方向
+  pitch: 0       # 视角俯仰
+
+# 游戏模式 (SURVIVAL, CREATIVE, ADVENTURE, SPECTATOR)
+gamemode: CREATIVE
+
+# 是否在服务器启动时自动加载
+load: true
+
+# 允许进入的玩家列表（逗号分隔）
+# 如果为空，则所有玩家都可以进入
+players: "player1,player2,player3"
+
+# 游戏规则配置
+gamerules:
+  keepInventory: true
+  doDaylightCycle: true
+  doMobSpawning: false
+  announceAdvancements: false
+  doImmediateRespawn: true
+  spawnRadius: 0
+
+# 世界创建者/所有者
+owner: "player1"
+
+# 世界描述
+description: "这是一个示例世界配置"
+
+# 创建时间
+created: "2024-01-01 12:00:00"
+
+# 资源包配置
+resourcepack:
+  main: "normal"  # 主资源包缩写，根据世界类型自动设置
+  base: "base"    # 基础资源包缩写，所有世界通用

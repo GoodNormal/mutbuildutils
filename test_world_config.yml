@@ -1,0 +1,19 @@
+spawnpoint:
+  x: 0
+  y: 64
+  z: 0
+  yaw: 0
+  pitch: 0
+gamemode: CREATIVE
+load: true
+players: testuser
+owner: testuser
+description: 测试世界配置
+created: 2024-01-01 12:00:00
+gamerules:
+  keepInventory: true
+  doDaylightCycle: true
+  doMobSpawning: false
+  announceAdvancements: false
+  doImmediateRespawn: true
+  spawnRadius: 0

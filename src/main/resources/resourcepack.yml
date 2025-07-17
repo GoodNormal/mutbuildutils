@@ -1,0 +1,44 @@
+base_resource_pack:
+  key: "base"
+  url: "https://cdn.example.com/base-pack.zip"
+  hash: "a1b2c3d4e5f6789..."
+  uuid: "550e8400-e29b-41d4-a716-446655440000"
+
+# 主资源包配置
+main_resource_packs:
+  normal:
+    url: "https://cdn.example.com/normal-world.zip"
+    hash: "1a2b3c4d5e6f789..."
+    uuid: "550e8400-e29b-41d4-a716-446655440001"
+  flat:
+    url: "https://cdn.example.com/flat-world.zip"
+    hash: "2b3c4d5e6f7a891..."
+    uuid: "550e8400-e29b-41d4-a716-446655440002"
+  nether:
+    url: "https://cdn.example.com/nether-world.zip"
+    hash: "3c4d5e6f7a8b912..."
+    uuid: "550e8400-e29b-41d4-a716-446655440003"
+  end:
+    url: "https://cdn.example.com/end-world.zip"
+    hash: "4d5e6f7a8b9c123..."
+    uuid: "550e8400-e29b-41d4-a716-446655440004"
+  ocean:
+    url: "https://cdn.example.com/ocean-world.zip"
+    hash: "5e6f7a8b9c1d234..."
+    uuid: "550e8400-e29b-41d4-a716-446655440005"
+  desert:
+    url: "https://cdn.example.com/desert-world.zip"
+    hash: "6f7a8b9c1d2e345..."
+    uuid: "550e8400-e29b-41d4-a716-446655440006"
+  snow:
+    url: "https://cdn.example.com/snow-world.zip"
+    hash: "7a8b9c1d2e3f456..."
+    uuid: "550e8400-e29b-41d4-a716-446655440007"
+  medieval:
+    url: "https://cdn.example.com/medieval-pack.zip"
+    hash: "8b9c1d2e3f4a567..."
+    uuid: "550e8400-e29b-41d4-a716-446655440008"
+  modern:
+    url: "https://cdn.example.com/modern-pack.zip"
+    hash: "9c1d2e3f4a5b678..."
+    uuid: "550e8400-e29b-41d4-a716-446655440009"
