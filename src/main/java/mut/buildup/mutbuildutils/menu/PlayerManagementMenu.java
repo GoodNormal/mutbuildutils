@@ -20,7 +20,7 @@ import java.util.UUID;
 
 public class PlayerManagementMenu {
     
-    private static final int PLAYERS_PER_PAGE = 8;
+    private static final int PLAYERS_PER_PAGE = 28;
     private static final int INVENTORY_SIZE = 54;
     
     public static void openPlayerMenu(Player viewer, int page) {
