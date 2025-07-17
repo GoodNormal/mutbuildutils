@@ -75,12 +75,27 @@ public class WorldConfig {
         File configFile = new File(worldConfigDir, worldName + ".yml");
         FileConfiguration config = new YamlConfiguration();
         
+        // 从主配置文件读取默认出生点设置
+        double defaultX = 0;
+        double defaultY = 64;
+        double defaultZ = 0;
+        float defaultYaw = 0;
+        float defaultPitch = 0;
+        
+        if (mainConfig != null) {
+            defaultX = mainConfig.getDouble("default-world-spawnpoint.x", 0);
+            defaultY = mainConfig.getDouble("default-world-spawnpoint.y", 64);
+            defaultZ = mainConfig.getDouble("default-world-spawnpoint.z", 0);
+            defaultYaw = (float) mainConfig.getDouble("default-world-spawnpoint.yaw", 0);
+            defaultPitch = (float) mainConfig.getDouble("default-world-spawnpoint.pitch", 0);
+        }
+        
         // 设置配置内容
-        config.set("spawnpoint.x", 0);
-        config.set("spawnpoint.y", 64);
-        config.set("spawnpoint.z", 0);
-        config.set("spawnpoint.yaw", 0);
-        config.set("spawnpoint.pitch", 0);
+        config.set("spawnpoint.x", defaultX);
+        config.set("spawnpoint.y", defaultY);
+        config.set("spawnpoint.z", defaultZ);
+        config.set("spawnpoint.yaw", defaultYaw);
+        config.set("spawnpoint.pitch", defaultPitch);
         config.set("gamemode", "SURVIVAL"); // 默认世界使用生存模式
         config.set("load", true); // 默认世界自动加载
         config.set("players", ""); // 默认世界允许所有玩家进入
@@ -108,6 +123,10 @@ public class WorldConfig {
         config.set("resourcepack.main", defaultMainPack);
         config.set("resourcepack.base", defaultBasePack);
         
+        // 设置默认菜单材料配置
+        config.set("menu_material.material", "GRASS_BLOCK");
+        config.set("menu_material.custom_model_data", 0);
+        
         worldConfigs.put(worldName, config);
         saveWorldConfig(worldName, config);
         
@@ -115,7 +134,7 @@ public class WorldConfig {
         List<String> allowedPlayers = new ArrayList<>(); // 空列表表示所有玩家都可以进入
         WorldSettings newSettings = new WorldSettings(
             0, 64, 0, 0, 0, GameMode.SURVIVAL, new HashMap<>(), true, allowedPlayers,
-            defaultMainPack, defaultBasePack
+            defaultMainPack, defaultBasePack, "GRASS_BLOCK", 0
         );
         worldSettings.put(worldName, newSettings);
     }
@@ -192,7 +211,11 @@ public class WorldConfig {
             String mainResourcePack = config.getString("resourcepack.main", "");
             String baseResourcePack = config.getString("resourcepack.base", "");
             
-            worldSettings.put(worldName, new WorldSettings(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, mainResourcePack, baseResourcePack));
+            // 加载菜单材料配置
+            String menuMaterial = config.getString("menu_material.material", "GRASS_BLOCK");
+            int customModelData = config.getInt("menu_material.custom_model_data", 0);
+            
+            worldSettings.put(worldName, new WorldSettings(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, mainResourcePack, baseResourcePack, menuMaterial, customModelData));
         } catch (Exception e) {
             System.err.println("加载世界配置失败: " + worldName + " - " + e.getMessage());
         }
@@ -235,7 +258,7 @@ public class WorldConfig {
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
                 settings.gamemode, settings.gameRules, load, settings.allowedPlayers,
-                settings.mainResourcePack, settings.baseResourcePack
+                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
             
@@ -258,7 +281,7 @@ public class WorldConfig {
                 WorldSettings newSettings = new WorldSettings(
                     settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
                     settings.gamemode, settings.gameRules, settings.load, newPlayers,
-                    settings.mainResourcePack, settings.baseResourcePack
+                    settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
                 );
             worldSettings.put(worldName, newSettings);
             
@@ -281,7 +304,7 @@ public class WorldConfig {
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
                 settings.gamemode, settings.gameRules, settings.load, newPlayers,
-                settings.mainResourcePack, settings.baseResourcePack
+                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
             
@@ -307,9 +330,13 @@ public class WorldConfig {
             String mainResourcePack = getResourcePackKeyByWorldType(worldType);
             String baseResourcePack = "base";
             
+            // 根据世界类型设置默认菜单材料
+            String defaultMenuMaterial = getDefaultMenuMaterialByWorldType(worldType);
+            int defaultCustomModelData = 0;
+            
             WorldSettings newSettings = new WorldSettings(
                 0, 64, 0, 0, 0, GameMode.CREATIVE, new HashMap<>(), true, allowedPlayers,
-                mainResourcePack, baseResourcePack
+                mainResourcePack, baseResourcePack, defaultMenuMaterial, defaultCustomModelData
             );
             worldSettings.put(worldName, newSettings);
             
@@ -342,6 +369,10 @@ public class WorldConfig {
             config.set("resourcepack.main", mainResourcePack != null ? mainResourcePack : "");
             config.set("resourcepack.base", baseResourcePack);
             
+            // 设置菜单材料配置
+            config.set("menu_material.material", defaultMenuMaterial);
+            config.set("menu_material.custom_model_data", defaultCustomModelData);
+            
             worldConfigs.put(worldName, config);
             saveWorldConfig(worldName, config);
         }
@@ -370,6 +401,34 @@ public class WorldConfig {
                 return "snow";
             default:
                 return worldType; // 默认使用世界类型作为资源包缩写
+        }
+    }
+    
+    /**
+     * 根据世界类型获取对应的默认菜单材料
+     */
+    private static String getDefaultMenuMaterialByWorldType(String worldType) {
+        if (worldType == null) return "GRASS_BLOCK";
+        
+        switch (worldType.toLowerCase()) {
+            case "normal":
+                return "GRASS_BLOCK";
+            case "flat":
+                return "STONE";
+            case "nether":
+                return "NETHERRACK";
+            case "end":
+                return "END_STONE";
+            case "ocean":
+                return "WATER_BUCKET";
+            case "desert":
+                return "SAND";
+            case "snow":
+                return "SNOW_BLOCK";
+            case "forest":
+                return "OAK_SAPLING";
+            default:
+                return "GRASS_BLOCK"; // 默认材料
         }
     }
 
@@ -476,7 +535,7 @@ public class WorldConfig {
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
                 settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
-                resourcePackKey, settings.baseResourcePack
+                resourcePackKey, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
             
@@ -499,7 +558,7 @@ public class WorldConfig {
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
                 settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
-                settings.mainResourcePack, resourcePackKey
+                settings.mainResourcePack, resourcePackKey, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
             
@@ -527,6 +586,46 @@ public class WorldConfig {
         WorldSettings settings = worldSettings.get(worldName);
         return settings != null ? settings.baseResourcePack : null;
     }
+    
+    /**
+     * 设置世界的菜单材料
+     */
+    public static void setWorldMenuMaterial(String worldName, String material, int customModelData) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings != null) {
+            // 更新内存中的设置
+            WorldSettings newSettings = new WorldSettings(
+                settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.mainResourcePack, settings.baseResourcePack, material, customModelData
+            );
+            worldSettings.put(worldName, newSettings);
+            
+            // 更新配置文件
+            FileConfiguration config = worldConfigs.get(worldName);
+            if (config != null) {
+                config.set("menu_material.material", material);
+                config.set("menu_material.custom_model_data", customModelData);
+                saveWorldConfig(worldName, config);
+            }
+        }
+    }
+    
+    /**
+     * 获取世界的菜单材料
+     */
+    public static String getWorldMenuMaterial(String worldName) {
+        WorldSettings settings = worldSettings.get(worldName);
+        return settings != null ? settings.menuMaterial : "GRASS_BLOCK";
+    }
+    
+    /**
+     * 获取世界的自定义模型数据
+     */
+    public static int getWorldCustomModelData(String worldName) {
+        WorldSettings settings = worldSettings.get(worldName);
+        return settings != null ? settings.customModelData : 0;
+    }
 
     public static class WorldSettings {
         private final double x;
@@ -540,15 +639,23 @@ public class WorldConfig {
         private final List<String> allowedPlayers;
         private final String mainResourcePack;
         private final String baseResourcePack;
+        private final String menuMaterial;
+        private final int customModelData;
 
         public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
                            Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers) {
-            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, null, null);
+            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, null, null, "GRASS_BLOCK", 0);
         }
 
         public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
                            Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers,
                            String mainResourcePack, String baseResourcePack) {
+            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, mainResourcePack, baseResourcePack, "GRASS_BLOCK", 0);
+        }
+        
+        public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
+                           Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers,
+                           String mainResourcePack, String baseResourcePack, String menuMaterial, int customModelData) {
             this.x = x;
             this.y = y;
             this.z = z;
@@ -560,6 +667,8 @@ public class WorldConfig {
             this.allowedPlayers = new ArrayList<>(allowedPlayers);
             this.mainResourcePack = mainResourcePack;
             this.baseResourcePack = baseResourcePack;
+            this.menuMaterial = menuMaterial;
+            this.customModelData = customModelData;
         }
 
         public Location createLocation(World world) {
@@ -592,6 +701,14 @@ public class WorldConfig {
 
         public String getBaseResourcePack() {
             return baseResourcePack;
+        }
+        
+        public String getMenuMaterial() {
+            return menuMaterial;
+        }
+        
+        public int getCustomModelData() {
+            return customModelData;
         }
     }
 }

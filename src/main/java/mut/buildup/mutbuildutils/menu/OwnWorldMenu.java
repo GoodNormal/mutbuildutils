@@ -88,11 +88,31 @@ public class OwnWorldMenu {
     }
 
     private static ItemStack createWorldItem(String worldName) {
-        ItemStack item = new ItemStack(Material.GRASS_BLOCK);
+        // 从世界配置中获取菜单材料设置
+        WorldConfig.WorldSettings settings = WorldConfig.getWorldSettings(worldName);
+        Material material = Material.GRASS_BLOCK; // 默认材料
+        int customModelData = 0;
+        
+        if (settings != null) {
+            try {
+                material = Material.valueOf(settings.getMenuMaterial().toUpperCase());
+                customModelData = settings.getCustomModelData();
+            } catch (IllegalArgumentException e) {
+                // 如果材料名称无效，使用默认材料
+                material = Material.GRASS_BLOCK;
+            }
+        }
+        
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         
         if (meta != null) {
             meta.setDisplayName(ChatColor.GREEN + worldName);
+            
+            // 设置自定义模型数据（如果不为0）
+            if (customModelData != 0) {
+                meta.setCustomModelData(customModelData);
+            }
             
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.GRAY + "世界名称: " + worldName);

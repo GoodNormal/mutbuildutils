@@ -41,3 +41,8 @@ created: "2024-01-01 12:00:00"
 resourcepack:
   main: "normal"  # 主资源包缩写，根据世界类型自动设置
   base: "base"    # 基础资源包缩写，所有世界通用
+
+# 世界菜单显示材料配置
+menu_material:
+  material: "GRASS_BLOCK"  # 在世界菜单中显示的材料
+  custom_model_data: 0     # 自定义模型数据，0表示不使用

@@ -31,7 +31,7 @@ public class PlayerManagementMenu {
         if (page > totalPages && totalPages > 0) page = totalPages;
         
         Inventory inventory = Bukkit.createInventory(null, INVENTORY_SIZE, 
-            Component.text("§6玩家管理菜单 §7(第" + page + "/" + totalPages + "页)"));
+            "§6玩家管理菜单 §7(第" + page + "/" + totalPages + "页)");
         
         // 填充背景
         fillBackground(inventory);
@@ -61,7 +61,7 @@ public class PlayerManagementMenu {
     private static void fillBackground(Inventory inventory) {
         ItemStack glass = new ItemStack(Material.LIGHT_BLUE_STAINED_GLASS_PANE);
         ItemMeta glassMeta = glass.getItemMeta();
-        glassMeta.displayName(Component.text(" "));
+        glassMeta.setDisplayName(" ");
         glass.setItemMeta(glassMeta);
         
         // 填充边框
@@ -80,51 +80,51 @@ public class PlayerManagementMenu {
         SkullMeta meta = (SkullMeta) head.getItemMeta();
         
         meta.setOwningPlayer(player);
-        meta.displayName(Component.text("§e" + player.getName()));
+        meta.setDisplayName("§e" + player.getName());
         
-        List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("§7UUID: §f" + player.getUniqueId().toString()));
-        lore.add(Component.text("§7状态: " + (player.isOnline() ? "§a在线" : "§c离线")));
+        List<String> lore = new ArrayList<>();
+        lore.add("§7UUID: §f" + player.getUniqueId().toString());
+        lore.add("§7状态: " + (player.isOnline() ? "§a在线" : "§c离线"));
         
         if (player.getLastPlayed() > 0) {
             long lastSeen = System.currentTimeMillis() - player.getLastPlayed();
             String timeAgo = formatTime(lastSeen);
-            lore.add(Component.text("§7最后登录: §f" + timeAgo + "前"));
+            lore.add("§7最后登录: §f" + timeAgo + "前");
         }
         
-        lore.add(Component.text(""));
+        lore.add("");
         
         // 添加玩家详细信息到lore
         if (player.isOnline()) {
             Player onlinePlayer = (Player) player;
-            lore.add(Component.text("§7世界: §f" + onlinePlayer.getWorld().getName()));
-            lore.add(Component.text("§7生命值: §f" + String.format("%.1f", onlinePlayer.getHealth()) + "/" + String.format("%.1f", onlinePlayer.getMaxHealth())));
-            lore.add(Component.text("§7等级: §f" + onlinePlayer.getLevel()));
-            lore.add(Component.text("§7游戏模式: §f" + onlinePlayer.getGameMode().name()));
+            lore.add("§7世界: §f" + onlinePlayer.getWorld().getName());
+            lore.add("§7生命值: §f" + String.format("%.1f", onlinePlayer.getHealth()) + "/" + String.format("%.1f", onlinePlayer.getMaxHealth()));
+            lore.add("§7等级: §f" + onlinePlayer.getLevel());
+            lore.add("§7游戏模式: §f" + onlinePlayer.getGameMode().name());
         }
         
         if (isViewerOp) {
             // OP可以查看玩家拥有的世界
-            lore.add(Component.text(""));
-            lore.add(Component.text("§6拥有的世界:"));
+            lore.add("");
+            lore.add("§6拥有的世界:");
             List<String> ownedWorlds = getPlayerOwnedWorlds(player.getName());
             if (ownedWorlds.isEmpty()) {
-                lore.add(Component.text("§7  无"));
+                lore.add("§7  无");
             } else {
                 for (String worldName : ownedWorlds) {
-                    lore.add(Component.text("§7  - §f" + worldName));
+                    lore.add("§7  - §f" + worldName);
                 }
             }
-            lore.add(Component.text(""));
-            lore.add(Component.text("§e左键: 查看玩家世界列表"));
-            lore.add(Component.text("§e右键: 传送到玩家"));
+            lore.add("");
+            lore.add("§e左键: 查看玩家世界列表");
+            lore.add("§e右键: 传送到玩家");
         } else {
-            lore.add(Component.text(""));
-            lore.add(Component.text("§e左键: 查看玩家世界列表"));
-            lore.add(Component.text("§c你没有权限传送到此玩家"));
+            lore.add("");
+            lore.add("§e左键: 查看玩家世界列表");
+            lore.add("§c你没有权限传送到此玩家");
         }
         
-        meta.lore(lore);
+        meta.setLore(lore);
         head.setItemMeta(meta);
         
         return head;
@@ -135,8 +135,8 @@ public class PlayerManagementMenu {
         if (currentPage > 1) {
             ItemStack prevPage = new ItemStack(Material.ARROW);
             ItemMeta prevMeta = prevPage.getItemMeta();
-            prevMeta.displayName(Component.text("§a上一页"));
-            prevMeta.lore(Arrays.asList(Component.text("§7点击前往第" + (currentPage - 1) + "页")));
+            prevMeta.setDisplayName("§a上一页");
+            prevMeta.setLore(Arrays.asList("§7点击前往第" + (currentPage - 1) + "页"));
             prevPage.setItemMeta(prevMeta);
             inventory.setItem(45, prevPage);
         }
@@ -145,8 +145,8 @@ public class PlayerManagementMenu {
         if (currentPage < totalPages) {
             ItemStack nextPage = new ItemStack(Material.ARROW);
             ItemMeta nextMeta = nextPage.getItemMeta();
-            nextMeta.displayName(Component.text("§a下一页"));
-            nextMeta.lore(Arrays.asList(Component.text("§7点击前往第" + (currentPage + 1) + "页")));
+            nextMeta.setDisplayName("§a下一页");
+            nextMeta.setLore(Arrays.asList("§7点击前往第" + (currentPage + 1) + "页"));
             nextPage.setItemMeta(nextMeta);
             inventory.setItem(53, nextPage);
         }
@@ -154,7 +154,7 @@ public class PlayerManagementMenu {
         // 关闭按钮
         ItemStack close = new ItemStack(Material.BARRIER);
         ItemMeta closeMeta = close.getItemMeta();
-        closeMeta.displayName(Component.text("§c关闭菜单"));
+        closeMeta.setDisplayName("§c关闭菜单");
         close.setItemMeta(closeMeta);
         inventory.setItem(49, close);
     }

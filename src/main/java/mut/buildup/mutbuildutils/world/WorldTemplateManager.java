@@ -8,6 +8,9 @@ import org.bukkit.GameRule;
 
 import mut.buildup.mutbuildutils.MUTbuildUtils;
 import mut.buildup.mutbuildutils.config.WorldConfig;
+import mut.buildup.mutbuildutils.config.MenuConfig;
+import mut.buildup.mutbuildutils.config.MenuConfig.WorldMenuItem;
+import org.bukkit.Material;
 
 import java.io.*;
 import java.nio.file.*;
@@ -69,6 +72,9 @@ public class WorldTemplateManager {
             // 创建世界配置（传递模板名称作为世界类型）
             WorldConfig.createWorldSettings(worldName, playerName, templateName);
             
+            // 从菜单配置中获取对应的材料设置并应用到世界配置
+            applyMenuMaterialToWorld(worldName, templateName);
+            
             // 发送世界创建成功的反馈
             Bukkit.broadcast(net.kyori.adventure.text.Component.text("§a世界 §e" + worldName + " §a已成功创建！"), "mutbuildutils.world.create");
         } else {
@@ -77,8 +83,28 @@ public class WorldTemplateManager {
 
         return world;
     }
-
-
+    
+    /**
+     * 从菜单配置中获取对应的材料设置并应用到世界配置
+     */
+    private void applyMenuMaterialToWorld(String worldName, String templateName) {
+        // 遍历菜单配置，查找匹配的世界类型
+        for (WorldMenuItem menuItem : MenuConfig.getMenuItems().values()) {
+            if (menuItem.getWorldType().equals(templateName)) {
+                // 获取材料和自定义模型数据
+                Material material = menuItem.getItem().getType();
+                int customModelData = 0;
+                
+                if (menuItem.getItem().hasItemMeta() && menuItem.getItem().getItemMeta().hasCustomModelData()) {
+                    customModelData = menuItem.getItem().getItemMeta().getCustomModelData();
+                }
+                
+                // 应用到世界配置
+                WorldConfig.setWorldMenuMaterial(worldName, material.name(), customModelData);
+                break;
+            }
+        }
+    }
 
     private void unzipWorld(File zipFile, String worldName) throws IOException {
         File worldDir = new File(serverDir, worldName);
