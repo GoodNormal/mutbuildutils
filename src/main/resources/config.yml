@@ -47,7 +47,6 @@ default-world-spawnpoint:
   yaw: 0
   pitch: 0
   
-# Invite system settings
 invite-system:
   expire-time: 300 # seconds
   max-pending-invites: 10
