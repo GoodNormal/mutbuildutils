@@ -47,19 +47,22 @@ public class MenuConfig {
         List<Map<?, ?>> worldsList = config.getMapList("worlds");
         if (worldsList == null) return;
 
+        // 获取世界菜单配置实例
+        WorldMenuConfig worldMenuConfig = WorldConfig.getWorldMenuConfig();
+        if (worldMenuConfig == null) {
+            System.err.println("[MenuConfig] 世界菜单配置未初始化，尝试手动初始化");
+            // 尝试手动初始化WorldMenuConfig
+            File menuConfigFile = new File(configFile.getParentFile(), "world/menu.yml");
+            worldMenuConfig = new WorldMenuConfig(menuConfigFile);
+            System.out.println("[MenuConfig] 手动初始化世界菜单配置完成");
+        }
+
         for (Map<?, ?> worldMap : worldsList) {
             Object slotObj = worldMap.get("slot");
             if (!(slotObj instanceof Integer)) continue;
             int slot = (Integer) slotObj;
             
             if (slot < 0 || slot >= menuSize) continue;
-
-            Object materialObj = worldMap.get("material");
-            if (!(materialObj instanceof String)) continue;
-            String materialName = (String) materialObj;
-
-            Material material = Material.getMaterial(materialName.toUpperCase());
-            if (material == null) continue;
 
             Object nameObj = worldMap.get("name");
             String displayName = nameObj instanceof String ? (String) nameObj : "未命名";
@@ -78,6 +81,11 @@ public class MenuConfig {
             Object worldObj = worldMap.get("world");
             String worldType = worldObj instanceof String ? (String) worldObj : "default";
 
+            // 从world/menu.yml配置中获取材料信息
+            WorldMenuConfig.MaterialInfo materialInfo = worldMenuConfig.getMaterialInfo(worldType);
+            Material material = materialInfo.getMaterial();
+            int customModelData = materialInfo.getCustomModelData();
+
             ItemStack itemStack = new ItemStack(material);
             ItemMeta meta = itemStack.getItemMeta();
             if (meta != null) {
@@ -88,30 +96,9 @@ public class MenuConfig {
                 }
                 meta.lore(loreComponents);
                 
-                // 支持CustomModelData (1.21.4兼容)
-                Object customModelDataObj = worldMap.get("custom_model_data");
-                if (customModelDataObj != null) {
-                    try {
-                        if (customModelDataObj instanceof Integer) {
-                            meta.setCustomModelData((Integer) customModelDataObj);
-                        } else if (customModelDataObj instanceof String) {
-                            // 支持字符串形式的CustomModelData
-                            String customModelDataStr = (String) customModelDataObj;
-                            try {
-                                int customModelDataInt = Integer.parseInt(customModelDataStr);
-                                meta.setCustomModelData(customModelDataInt);
-                            } catch (NumberFormatException e) {
-                                // 如果字符串不是数字，忽略此设置
-                                System.out.println("警告: CustomModelData值 '" + customModelDataStr + "' 不是有效的整数");
-                            }
-                        } else if (customModelDataObj instanceof Double || customModelDataObj instanceof Float) {
-                            // 支持浮点数形式的CustomModelData (转换为整数)
-                            Number customModelDataNum = (Number) customModelDataObj;
-                            meta.setCustomModelData(customModelDataNum.intValue());
-                        }
-                    } catch (Exception e) {
-                        System.out.println("设置CustomModelData时出错: " + e.getMessage());
-                    }
+                // 设置自定义模型数据
+                if (customModelData != 0) {
+                    meta.setCustomModelData(customModelData);
                 }
                 
                 itemStack.setItemMeta(meta);

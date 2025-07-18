@@ -1,0 +1,120 @@
+# 世界菜单材料配置文件
+# 定义各种世界类型对应的菜单显示材料
+
+# 材料配置映射
+# 格式: 缩写 -> 材料配置
+materials:
+  # 普通世界类型
+  normal:
+    material: "GRASS_BLOCK"
+    custom_model_data: 0
+    
+  # 超平坦世界
+  flat:
+    material: "STONE"
+    custom_model_data: 0
+    
+  # 下界世界
+  nether:
+    material: "NETHERRACK"
+    custom_model_data: 0
+    
+  # 末地世界
+  end:
+    material: "END_STONE"
+    custom_model_data: 0
+    
+  # 海洋世界
+  ocean:
+    material: "WATER_BUCKET"
+    custom_model_data: 0
+    
+  # 沙漠世界
+  desert:
+    material: "SAND"
+    custom_model_data: 0
+    
+  # 雪地世界
+  snow:
+    material: "SNOW_BLOCK"
+    custom_model_data: 0
+    
+  # 森林世界
+  forest:
+    material: "OAK_SAPLING"
+    custom_model_data: 0
+    
+  # 山地世界
+  mountain:
+    material: "STONE"
+    custom_model_data: 0
+    
+  # 洞穴世界
+  cave:
+    material: "COBBLESTONE"
+    custom_model_data: 0
+    
+  # 浮空岛世界
+  skyblock:
+    material: "GRASS_BLOCK"
+    custom_model_data: 0
+    
+  # 村庄世界
+  village:
+    material: "OAK_PLANKS"
+    custom_model_data: 0
+    
+  # 地牢世界
+  dungeon:
+    material: "MOSSY_COBBLESTONE"
+    custom_model_data: 0
+    
+  # 竞技场世界
+  arena:
+    material: "IRON_SWORD"
+    custom_model_data: 0
+    
+  # 跑酷世界
+  parkour:
+    material: "LEATHER_BOOTS"
+    custom_model_data: 0
+    
+  # 解谜世界
+  puzzle:
+    material: "REDSTONE"
+    custom_model_data: 0
+    
+  # 建筑世界
+  build:
+    material: "BRICKS"
+    custom_model_data: 0
+    
+  # 生存世界
+  survival:
+    material: "WOODEN_SWORD"
+    custom_model_data: 0
+    
+  # 创造世界
+  creative:
+    material: "COMMAND_BLOCK"
+    custom_model_data: 0
+    
+  # 冒险世界
+  adventure:
+    material: "MAP"
+    custom_model_data: 0
+    
+  # 小游戏世界
+  minigame:
+    material: "EMERALD"
+    custom_model_data: 0
+    
+  # 测试世界
+  test:
+    material: "BARRIER"
+    custom_model_data: 0
+    
+  # 默认材料（当找不到对应缩写时使用）
+  default:
+    material: "GRASS_BLOCK"
+    custom_model_data: 0

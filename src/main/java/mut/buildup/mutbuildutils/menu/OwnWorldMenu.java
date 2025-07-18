@@ -88,19 +88,16 @@ public class OwnWorldMenu {
     }
 
     private static ItemStack createWorldItem(String worldName) {
-        // 从世界配置中获取菜单材料设置
+        // 从世界配置中获取菜单材料缩写
         WorldConfig.WorldSettings settings = WorldConfig.getWorldSettings(worldName);
         Material material = Material.GRASS_BLOCK; // 默认材料
         int customModelData = 0;
         
         if (settings != null) {
-            try {
-                material = Material.valueOf(settings.getMenuMaterial().toUpperCase());
-                customModelData = settings.getCustomModelData();
-            } catch (IllegalArgumentException e) {
-                // 如果材料名称无效，使用默认材料
-                material = Material.GRASS_BLOCK;
-            }
+            String abbreviation = settings.getMenuMaterialAbbreviation();
+            mut.buildup.mutbuildutils.config.WorldMenuConfig.MaterialInfo materialInfo = WorldConfig.getWorldMenuConfig().getMaterialInfo(abbreviation);
+            material = materialInfo.getMaterial();
+            customModelData = materialInfo.getCustomModelData();
         }
         
         ItemStack item = new ItemStack(material);

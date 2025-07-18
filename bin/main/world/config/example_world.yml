@@ -27,7 +27,7 @@ gamerules:
   announceAdvancements: false
   doImmediateRespawn: true
   spawnRadius: 0
-
+  randomTickSpeed: 0
 # 世界创建者/所有者
 owner: "player1"
 

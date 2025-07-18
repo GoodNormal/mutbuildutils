@@ -95,21 +95,72 @@ public class WorldTemplateManager {
      * 从菜单配置中获取对应的材料设置并应用到世界配置
      */
     private void applyMenuMaterialToWorld(String worldName, String templateName) {
-        // 遍历菜单配置，查找匹配的世界类型
-        for (WorldMenuItem menuItem : MenuConfig.getMenuItems().values()) {
-            if (menuItem.getWorldType().equals(templateName)) {
-                // 获取材料和自定义模型数据
-                Material material = menuItem.getItem().getType();
-                int customModelData = 0;
-                
-                if (menuItem.getItem().hasItemMeta() && menuItem.getItem().getItemMeta().hasCustomModelData()) {
-                    customModelData = menuItem.getItem().getItemMeta().getCustomModelData();
-                }
-                
-                // 应用到世界配置
-                WorldConfig.setWorldMenuMaterial(worldName, material.name(), customModelData);
-                break;
-            }
+        // 根据世界名第一个下划线前的部分设置对应的材料缩写
+        String materialAbbreviation = getMaterialAbbreviationByWorldName(worldName);
+        WorldConfig.setWorldMenuMaterial(worldName, materialAbbreviation);
+    }
+    
+    /**
+     * 根据世界名第一个下划线前的部分获取对应的材料缩写
+     */
+    private String getMaterialAbbreviationByWorldName(String worldName) {
+        if (worldName == null || worldName.isEmpty()) return "default";
+        
+        // 获取世界名第一个下划线前的部分
+        String prefix = worldName;
+        int underscoreIndex = worldName.indexOf('_');
+        if (underscoreIndex > 0) {
+            prefix = worldName.substring(0, underscoreIndex);
+        }
+        
+        // 根据前缀返回对应的材料缩写
+        switch (prefix.toLowerCase()) {
+            case "normal":
+                return "normal";
+            case "flat":
+                return "flat";
+            case "nether":
+                return "nether";
+            case "end":
+                return "end";
+            case "ocean":
+                return "ocean";
+            case "desert":
+                return "desert";
+            case "snow":
+                return "snow";
+            case "forest":
+                return "forest";
+            case "mountain":
+                return "mountain";
+            case "cave":
+                return "cave";
+            case "skyblock":
+                return "skyblock";
+            case "village":
+                return "village";
+            case "dungeon":
+                return "dungeon";
+            case "arena":
+                return "arena";
+            case "parkour":
+                return "parkour";
+            case "puzzle":
+                return "puzzle";
+            case "build":
+                return "build";
+            case "survival":
+                return "survival";
+            case "creative":
+                return "creative";
+            case "adventure":
+                return "adventure";
+            case "minigame":
+                return "minigame";
+            case "test":
+                return "test";
+            default:
+                return "default";
         }
     }
 

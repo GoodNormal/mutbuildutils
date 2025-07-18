@@ -533,18 +533,27 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        player.sendMessage(Component.text("§e正在加载所有配置的世界..."));
+        player.sendMessage(Component.text("§e正在加载所有未加载的世界..."));
         
-        List<String> worldsToLoad = WorldConfig.getWorldsToLoadOnStartup();
+        // 获取所有配置的世界，然后过滤出未加载的世界
+        List<String> allConfiguredWorlds = new ArrayList<>(WorldConfig.getAllWorldSettings().keySet());
+        List<String> unloadedWorlds = new ArrayList<>();
+        
+        for (String worldName : allConfiguredWorlds) {
+            if (Bukkit.getWorld(worldName) == null) {
+                unloadedWorlds.add(worldName);
+            }
+        }
+        
+        if (unloadedWorlds.isEmpty()) {
+            player.sendMessage(Component.text("§7没有找到未加载的世界。"));
+            return true;
+        }
+        
         int successCount = 0;
         int failCount = 0;
         
-        for (String worldName : worldsToLoad) {
-            if (Bukkit.getWorld(worldName) != null) {
-                player.sendMessage(Component.text("§7世界 '" + worldName + "' 已经加载，跳过。"));
-                continue;
-            }
-            
+        for (String worldName : unloadedWorlds) {
             try {
                 World world = Bukkit.createWorld(new org.bukkit.WorldCreator(worldName));
                 if (world != null) {
@@ -638,11 +647,34 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         }
 
         try {
-            // 只删除世界配置，不删除世界本体
+            // 检查世界是否已加载，如果已加载则先卸载
+            World world = Bukkit.getWorld(worldName);
+            if (world != null) {
+                player.sendMessage(Component.text("§e世界 '" + worldName + "' 已加载，正在先执行卸载操作..."));
+                
+                // 将该世界中的所有玩家传送到主世界
+                world.getPlayers().forEach(p -> {
+                    p.teleport(mainWorld.getSpawnLocation());
+                    p.sendMessage(Component.text("§e由于世界删除，你已被传送至主世界。"));
+                });
+                
+                // 卸载世界
+                if (Bukkit.unloadWorld(world, true)) {
+                    player.sendMessage(Component.text("§a世界 '" + worldName + "' 已成功卸载！"));
+                } else {
+                    player.sendMessage(Component.text("§c卸载世界 '" + worldName + "' 失败！删除操作已取消。"));
+                    return true;
+                }
+            }
+            
+            // 删除世界配置
             WorldConfig.removeWorldConfig(worldName);
             
             player.sendMessage(Component.text("§a世界 '" + worldName + "' 的配置已成功删除！"));
             player.sendMessage(Component.text("§7注意：世界文件本体未被删除，只是移除了配置信息。"));
+            if (world != null) {
+                player.sendMessage(Component.text("§7世界已从内存中卸载，如需重新使用请重新加载。"));
+            }
         } catch (Exception e) {
             player.sendMessage(Component.text("§c删除世界配置时发生错误：" + e.getMessage()));
             e.printStackTrace();
@@ -675,7 +707,7 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(Component.text("§f/world kick <玩家名> <世界名> §7- 踢出玩家的世界邀请权限"));
         }
         if (player.hasPermission("mutbuildutils.world.load")) {
-            player.sendMessage(Component.text("§f/world load <世界名|@allworld> §7- 加载世界"));
+            player.sendMessage(Component.text("§f/world load <世界名|@allworld> §7- 加载世界（@allworld指所有未加载的世界）"));
         }
         if (player.hasPermission("mutbuildutils.world.unload")) {
             player.sendMessage(Component.text("§f/world unload <世界名|@allworld> §7- 卸载世界"));
@@ -753,34 +785,17 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
                     worlds.add("@allworld");
                     break;
                 case "remove":
-                    // 显示所有世界（已加载和未加载），但排除默认世界
+                    // 只显示已加载的世界，排除默认世界
                     World mainWorld = Bukkit.getWorlds().get(0);
                     String mainWorldName = mainWorld.getName();
                     
-                    // 添加已加载的世界
+                    // 只添加已加载的世界
                     worlds.addAll(Bukkit.getWorlds().stream()
                             .map(World::getName)
                             .filter(name -> !name.equals(mainWorldName) && 
                                           !name.equals(mainWorldName + "_nether") && 
                                           !name.equals(mainWorldName + "_the_end"))
                             .collect(Collectors.toList()));
-                    
-                    // 添加未加载的世界
-                    File worldContainer2 = Bukkit.getWorldContainer();
-                    File[] files2 = worldContainer2.listFiles();
-                    if (files2 != null) {
-                        for (File file : files2) {
-                            if (file.isDirectory() && new File(file, "level.dat").exists()) {
-                                String worldName = file.getName();
-                                if (Bukkit.getWorld(worldName) == null && 
-                                    !worldName.equals(mainWorldName) && 
-                                    !worldName.equals(mainWorldName + "_nether") && 
-                                    !worldName.equals(mainWorldName + "_the_end")) {
-                                    worlds.add(worldName);
-                                }
-                            }
-                        }
-                    }
                     break;
                 case "invite":
                     // 显示非OP的在线玩家

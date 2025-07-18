@@ -1,11 +1,18 @@
 # 世界创建菜单配置文件
+# 此文件定义了世界创建GUI菜单的布局和内容
+
 # 菜单大小 (必须是9的倍数，最大54)
+# 54槽位 = 6行 × 9列的GUI界面
 menu_size: 54
 
 # 世界模板配置
+# 每个世界类型对应一个菜单项
+# slot: GUI中的槽位位置 (0-53)
+# name: 显示名称 (支持颜色代码)
+# lore: 物品描述 (支持颜色代码)
+# world: 世界类型标识符 (必须与world/menu.yml中的材料配置对应)
 worlds:
   - slot: 10
-    material: GRASS_BLOCK
     name: "§a普通世界"
     lore:
       - "§7创建一个普通的主世界"
@@ -14,7 +21,6 @@ worlds:
     world: "normal"
     
   - slot: 12
-    material: STONE
     name: "§8超平坦世界"
     lore:
       - "§7创建一个超平坦世界"
@@ -23,7 +29,6 @@ worlds:
     world: "flat"
     
   - slot: 14
-    material: NETHERRACK
     name: "§c下界世界"
     lore:
       - "§7创建一个下界世界"
@@ -32,7 +37,6 @@ worlds:
     world: "nether"
     
   - slot: 16
-    material: END_STONE
     name: "§d末地世界"
     lore:
       - "§7创建一个末地世界"
@@ -41,7 +45,6 @@ worlds:
     world: "end"
     
   - slot: 28
-    material: WATER_BUCKET
     name: "§b海洋世界"
     lore:
       - "§7创建一个海洋世界"
@@ -50,7 +53,6 @@ worlds:
     world: "ocean"
     
   - slot: 30
-    material: SAND
     name: "§e沙漠世界"
     lore:
       - "§7创建一个沙漠世界"
@@ -59,7 +61,6 @@ worlds:
     world: "desert"
     
   - slot: 32
-    material: SNOW_BLOCK
     name: "§f雪地世界"
     lore:
       - "§7创建一个雪地世界"
@@ -68,7 +69,6 @@ worlds:
     world: "snow"
     
   - slot: 34
-    material: OAK_SAPLING
     name: "§2森林世界"
     lore:
       - "§7创建一个森林世界"
@@ -76,35 +76,110 @@ worlds:
       - "§e点击创建"
     world: "forest"
     
-  # CustomModelData 示例 - 使用整数
+  # 更多世界类型示例
   - slot: 19
-    material: DIAMOND
-    name: "§b自定义模型世界 1"
+    name: "§b建筑世界"
     lore:
-      - "§7使用自定义模型的世界"
-      - "§7CustomModelData: 1001"
+      - "§7专门用于建筑的世界"
+      - "§7提供丰富的建筑材料"
       - "§e点击创建"
-    world: "custom1"
-    custom_model_data: 1001
+    world: "build"
     
-  # CustomModelData 示例 - 使用字符串
   - slot: 21
-    material: EMERALD
-    name: "§a自定义模型世界 2"
+    name: "§a生存世界"
     lore:
-      - "§7使用自定义模型的世界"
-      - "§7CustomModelData: 2002 (字符串)"
+      - "§7挑战性的生存世界"
+      - "§7测试你的生存技能"
       - "§e点击创建"
-    world: "custom2"
-    custom_model_data: "2002"
+    world: "survival"
     
-  # CustomModelData 示例 - 使用浮点数
   - slot: 23
-    material: GOLD_INGOT
-    name: "§6自定义模型世界 3"
+    name: "§6创造世界"
     lore:
-      - "§7使用自定义模型的世界"
-      - "§7CustomModelData: 3003.5 (浮点数转整数)"
+      - "§7无限创造的世界"
+      - "§7发挥你的想象力"
       - "§e点击创建"
-    world: "custom3"
-    custom_model_data: 3003.5
+    world: "creative"
+    
+  # 第三行世界类型
+  - slot: 37
+    name: "§8山地世界"
+    lore:
+      - "§7创建一个山地世界"
+      - "§7崎岖的山脉地形"
+      - "§e点击创建"
+    world: "mountain"
+    
+  - slot: 39
+    name: "§7洞穴世界"
+    lore:
+      - "§7创建一个洞穴世界"
+      - "§7地下洞穴探险"
+      - "§e点击创建"
+    world: "cave"
+    
+  - slot: 41
+    name: "§b浮空岛世界"
+    lore:
+      - "§7创建一个浮空岛世界"
+      - "§7在天空中的岛屿"
+      - "§e点击创建"
+    world: "skyblock"
+    
+  - slot: 43
+    name: "§6村庄世界"
+    lore:
+      - "§7创建一个村庄世界"
+      - "§7充满村民的世界"
+      - "§e点击创建"
+    world: "village"
+    
+  # 第四行特殊世界类型
+  - slot: 46
+    name: "§4地牢世界"
+    lore:
+      - "§7创建一个地牢世界"
+      - "§7充满怪物的地牢"
+      - "§e点击创建"
+    world: "dungeon"
+    
+  - slot: 48
+    name: "§c竞技场世界"
+    lore:
+      - "§7创建一个竞技场世界"
+      - "§7PvP战斗场地"
+      - "§e点击创建"
+    world: "arena"
+    
+  - slot: 50
+    name: "§a跑酷世界"
+    lore:
+      - "§7创建一个跑酷世界"
+      - "§7挑战你的跳跃技巧"
+      - "§e点击创建"
+    world: "parkour"
+    
+  - slot: 52
+    name: "§c解谜世界"
+    lore:
+      - "§7创建一个解谜世界"
+      - "§7考验你的智慧"
+      - "§e点击创建"
+    world: "puzzle"
+
+# 配置说明:
+# 1. 槽位布局 (54槽位GUI):
+#    第一行: 0-8    第二行: 9-17   第三行: 18-26
+#    第四行: 27-35  第五行: 36-44  第六行: 45-53
+#
+# 2. 颜色代码:
+#    §0-黑色 §1-深蓝 §2-深绿 §3-深青 §4-深红 §5-紫色 §6-金色 §7-灰色
+#    §8-深灰 §9-蓝色 §a-绿色 §b-青色 §c-红色 §d-粉色 §e-黄色 §f-白色
+#
+# 3. 世界类型必须与world/menu.yml中定义的材料配置对应
+#    如果world/menu.yml中没有对应的材料配置，将使用默认材料
+#
+# 4. 添加新世界类型的步骤:
+#    a) 在world/menu.yml中添加对应的材料配置
+#    b) 在此文件中添加菜单项配置
+#    c) 重启服务器或重载配置
