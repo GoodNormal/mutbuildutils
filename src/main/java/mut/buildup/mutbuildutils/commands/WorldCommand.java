@@ -56,6 +56,8 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
                 return handleOwnList(player, args);
             case "setspawn":
                 return handleSetSpawn(player, args);
+            case "remove":
+                return handleRemove(player, args);
             default:
                 sendUsage(player);
                 return true;
@@ -352,11 +354,17 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length < 2) {
-            player.sendMessage(Component.text("§c用法: /world load <世界名>"));
+            player.sendMessage(Component.text("§c用法: /world load <世界名|@allworld>"));
             return true;
         }
 
         String worldName = args[1];
+        
+        // 处理@allworld特殊参数
+        if ("@allworld".equalsIgnoreCase(worldName)) {
+            return handleLoadAllWorlds(player);
+        }
+        
         if (Bukkit.getWorld(worldName) != null) {
             player.sendMessage(Component.text("§c世界 '" + worldName + "' 已经加载！"));
             return true;
@@ -365,10 +373,40 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         try {
             World world = Bukkit.createWorld(new org.bukkit.WorldCreator(worldName));
             if (world != null) {
+                // 解析世界名称以获取资源包和所有者信息
+                String mainResourcePack = null;
+                String worldOwner = null;
+                
+                String[] parts = worldName.split("_");
+                if (parts.length >= 1) {
+                    // 第一个下划线前的内容作为主资源包
+                    mainResourcePack = parts[0];
+                }
+                if (parts.length >= 3) {
+                    // 第二个下划线后的所有内容作为世界所有者
+                    StringBuilder ownerBuilder = new StringBuilder();
+                    for (int i = 2; i < parts.length; i++) {
+                        if (i > 2) ownerBuilder.append("_");
+                        ownerBuilder.append(parts[i]);
+                    }
+                    worldOwner = ownerBuilder.toString();
+                }
+                
                 // 检查是否已有配置文件，如果没有则创建
                 if (!WorldConfig.isWorldLoaded(worldName)) {
-                    WorldConfig.createWorldSettings(worldName, player.getName());
+                    WorldConfig.createWorldSettings(worldName, worldOwner != null ? worldOwner : player.getName());
                     player.sendMessage(Component.text("§e已为世界 '" + worldName + "' 创建配置文件"));
+                    
+                    // 设置主资源包
+                    if (mainResourcePack != null && !mainResourcePack.isEmpty()) {
+                        WorldConfig.setWorldMainResourcePack(worldName, mainResourcePack);
+                        player.sendMessage(Component.text("§a已设置世界主资源包为: " + mainResourcePack));
+                    }
+                    
+                    // 设置世界所有者
+                    if (worldOwner != null && !worldOwner.isEmpty()) {
+                        player.sendMessage(Component.text("§a已设置世界所有者为: " + worldOwner));
+                    }
                 }
                 
                 WorldConfig.applyGameRules(world, worldName); // 应用游戏规则
@@ -390,11 +428,17 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         }
 
         if (args.length < 2) {
-            player.sendMessage(Component.text("§c用法: /world unload <世界名>"));
+            player.sendMessage(Component.text("§c用法: /world unload <世界名|@allworld>"));
             return true;
         }
 
         String worldName = args[1];
+        
+        // 处理@allworld特殊参数
+        if ("@allworld".equalsIgnoreCase(worldName)) {
+            return handleUnloadAllWorlds(player);
+        }
+        
         World world = Bukkit.getWorld(worldName);
 
         if (world == null) {
@@ -483,6 +527,146 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleLoadAllWorlds(Player player) {
+        if (!player.hasPermission("mutbuildutils.world.admin") && !player.isOp()) {
+            player.sendMessage(Component.text("§c你没有权限执行此命令！只有管理员可以加载所有世界。"));
+            return true;
+        }
+
+        player.sendMessage(Component.text("§e正在加载所有配置的世界..."));
+        
+        List<String> worldsToLoad = WorldConfig.getWorldsToLoadOnStartup();
+        int successCount = 0;
+        int failCount = 0;
+        
+        for (String worldName : worldsToLoad) {
+            if (Bukkit.getWorld(worldName) != null) {
+                player.sendMessage(Component.text("§7世界 '" + worldName + "' 已经加载，跳过。"));
+                continue;
+            }
+            
+            try {
+                World world = Bukkit.createWorld(new org.bukkit.WorldCreator(worldName));
+                if (world != null) {
+                    WorldConfig.applyGameRules(world, worldName);
+                    player.sendMessage(Component.text("§a✓ 世界 '" + worldName + "' 加载成功"));
+                    successCount++;
+                } else {
+                    player.sendMessage(Component.text("§c✗ 世界 '" + worldName + "' 加载失败"));
+                    failCount++;
+                }
+            } catch (Exception e) {
+                player.sendMessage(Component.text("§c✗ 世界 '" + worldName + "' 加载失败: " + e.getMessage()));
+                failCount++;
+            }
+        }
+        
+        player.sendMessage(Component.text(String.format("§6=== 加载完成 === 成功: %d, 失败: %d", successCount, failCount)));
+        return true;
+    }
+
+    private boolean handleUnloadAllWorlds(Player player) {
+        if (!player.hasPermission("mutbuildutils.world.admin") && !player.isOp()) {
+            player.sendMessage(Component.text("§c你没有权限执行此命令！只有管理员可以卸载所有世界。"));
+            return true;
+        }
+
+        player.sendMessage(Component.text("§e正在卸载所有非主世界..."));
+        
+        World mainWorld = Bukkit.getWorlds().get(0);
+        List<World> worldsToUnload = new ArrayList<>();
+        
+        // 收集需要卸载的世界（除了主世界）
+        for (World world : Bukkit.getWorlds()) {
+            if (!world.equals(mainWorld)) {
+                worldsToUnload.add(world);
+            }
+        }
+        
+        int successCount = 0;
+        int failCount = 0;
+        
+        for (World world : worldsToUnload) {
+            String worldName = world.getName();
+            
+            // 将该世界中的所有玩家传送到主世界
+            world.getPlayers().forEach(p -> {
+                p.teleport(mainWorld.getSpawnLocation());
+                p.sendMessage(Component.text("§e由于批量世界卸载，你已被传送至主世界。"));
+            });
+            
+            if (Bukkit.unloadWorld(world, true)) {
+                WorldConfig.setWorldLoadStatus(worldName, false);
+                player.sendMessage(Component.text("§a✓ 世界 '" + worldName + "' 卸载成功"));
+                successCount++;
+            } else {
+                player.sendMessage(Component.text("§c✗ 世界 '" + worldName + "' 卸载失败"));
+                failCount++;
+            }
+        }
+        
+        player.sendMessage(Component.text(String.format("§6=== 卸载完成 === 成功: %d, 失败: %d", successCount, failCount)));
+        return true;
+    }
+
+    private boolean handleRemove(Player player, String[] args) {
+        if (!player.hasPermission("mutbuildutils.world.admin") && !player.isOp()) {
+            player.sendMessage(Component.text("§c你没有权限执行此命令！只有管理员可以删除世界配置。"));
+            return true;
+        }
+
+        if (args.length < 2) {
+            player.sendMessage(Component.text("§c用法: /world remove <世界名>"));
+            return true;
+        }
+
+        String worldName = args[1];
+        
+        // 检查是否为主世界
+        World mainWorld = Bukkit.getWorlds().get(0);
+        if (worldName.equals(mainWorld.getName()) || 
+            worldName.equals(mainWorld.getName() + "_nether") || 
+            worldName.equals(mainWorld.getName() + "_the_end")) {
+            player.sendMessage(Component.text("§c无法删除默认世界的配置！"));
+            return true;
+        }
+
+        // 检查世界配置是否存在
+        if (!WorldConfig.isWorldConfigExists(worldName)) {
+            player.sendMessage(Component.text("§c世界 '" + worldName + "' 的配置不存在！"));
+            return true;
+        }
+
+        try {
+            // 只删除世界配置，不删除世界本体
+            WorldConfig.removeWorldConfig(worldName);
+            
+            player.sendMessage(Component.text("§a世界 '" + worldName + "' 的配置已成功删除！"));
+            player.sendMessage(Component.text("§7注意：世界文件本体未被删除，只是移除了配置信息。"));
+        } catch (Exception e) {
+            player.sendMessage(Component.text("§c删除世界配置时发生错误：" + e.getMessage()));
+            e.printStackTrace();
+        }
+        
+        return true;
+    }
+
+    private void deleteDirectory(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            directory.delete();
+        }
+    }
+
     private void sendUsage(Player player) {
         player.sendMessage(Component.text("§6=== 世界命令帮助 ==="));
         player.sendMessage(Component.text("§f/world tp <世界名> §7- 传送到指定世界"));
@@ -491,10 +675,13 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             player.sendMessage(Component.text("§f/world kick <玩家名> <世界名> §7- 踢出玩家的世界邀请权限"));
         }
         if (player.hasPermission("mutbuildutils.world.load")) {
-            player.sendMessage(Component.text("§f/world load <世界名> §7- 加载世界"));
+            player.sendMessage(Component.text("§f/world load <世界名|@allworld> §7- 加载世界"));
         }
         if (player.hasPermission("mutbuildutils.world.unload")) {
-            player.sendMessage(Component.text("§f/world unload <世界名> §7- 卸载世界"));
+            player.sendMessage(Component.text("§f/world unload <世界名|@allworld> §7- 卸载世界"));
+        }
+        if (player.hasPermission("mutbuildutils.world.admin") || player.isOp()) {
+            player.sendMessage(Component.text("§f/world remove <世界名> §7- 删除世界（危险操作）"));
         }
         if (player.hasPermission("mutbuildutils.world.admin") || player.isOp()) {
             player.sendMessage(Component.text("§f/world approve <邀请者> §7- 同意邀请申请"));
@@ -522,6 +709,7 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             if (sender.hasPermission("mutbuildutils.world.admin") || sender.isOp()) {
                 subCommands.add("approve");
                 subCommands.add("deny");
+                subCommands.add("remove");
             }
             subCommands.add("kick"); // 所有玩家都可以使用kick（但需要是世界所有者）
             subCommands.add("setspawn"); // 所有玩家都可以使用setspawn（但需要是世界所有者或管理员）
@@ -534,15 +722,21 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
             List<String> worlds = new ArrayList<>();
             switch (args[0].toLowerCase()) {
                 case "tp":
-                case "unload":
                 case "setspawn":
                     // 只显示已加载的世界
                     worlds.addAll(Bukkit.getWorlds().stream()
                             .map(World::getName)
                             .collect(Collectors.toList()));
                     break;
+                case "unload":
+                    // 显示已加载的世界，并添加@allworld选项
+                    worlds.addAll(Bukkit.getWorlds().stream()
+                            .map(World::getName)
+                            .collect(Collectors.toList()));
+                    worlds.add("@allworld");
+                    break;
                 case "load":
-                    // 显示可加载的世界文件夹
+                    // 显示可加载的世界文件夹，并添加@allworld选项
                     File worldContainer = Bukkit.getWorldContainer();
                     File[] files = worldContainer.listFiles();
                     if (files != null) {
@@ -551,6 +745,37 @@ public class WorldCommand implements CommandExecutor, TabCompleter {
                                 String worldName = file.getName();
                                 // 排除已加载的世界
                                 if (Bukkit.getWorld(worldName) == null) {
+                                    worlds.add(worldName);
+                                }
+                            }
+                        }
+                    }
+                    worlds.add("@allworld");
+                    break;
+                case "remove":
+                    // 显示所有世界（已加载和未加载），但排除默认世界
+                    World mainWorld = Bukkit.getWorlds().get(0);
+                    String mainWorldName = mainWorld.getName();
+                    
+                    // 添加已加载的世界
+                    worlds.addAll(Bukkit.getWorlds().stream()
+                            .map(World::getName)
+                            .filter(name -> !name.equals(mainWorldName) && 
+                                          !name.equals(mainWorldName + "_nether") && 
+                                          !name.equals(mainWorldName + "_the_end"))
+                            .collect(Collectors.toList()));
+                    
+                    // 添加未加载的世界
+                    File worldContainer2 = Bukkit.getWorldContainer();
+                    File[] files2 = worldContainer2.listFiles();
+                    if (files2 != null) {
+                        for (File file : files2) {
+                            if (file.isDirectory() && new File(file, "level.dat").exists()) {
+                                String worldName = file.getName();
+                                if (Bukkit.getWorld(worldName) == null && 
+                                    !worldName.equals(mainWorldName) && 
+                                    !worldName.equals(mainWorldName + "_nether") && 
+                                    !worldName.equals(mainWorldName + "_the_end")) {
                                     worlds.add(worldName);
                                 }
                             }

@@ -1,5 +1,6 @@
 package mut.buildup.mutbuildutils.config;
 
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
@@ -7,12 +8,14 @@ import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.Date;
+import java.util.UUID;
 
 public class WorldConfig {
     private static File worldConfigDir;
@@ -219,7 +222,7 @@ public class WorldConfig {
         saveWorldConfig(worldName, config);
         
         // 创建内存中的设置
-        List<String> allowedPlayers = new ArrayList<>(); // 空列表表示所有玩家都可以进入
+        List<PlayerInfo> allowedPlayers = new ArrayList<>(); // 空列表表示所有玩家都可以进入
         Map<GameRule<?>, Object> gameRules = new HashMap<>();
         gameRules.put(GameRule.KEEP_INVENTORY, keepInventory);
         gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, doDaylightCycle);
@@ -242,7 +245,7 @@ public class WorldConfig {
         
         WorldSettings newSettings = new WorldSettings(
             defaultX, defaultY, defaultZ, defaultYaw, defaultPitch, 
-            GameMode.valueOf(gameMode), gameRules, true, allowedPlayers,
+            GameMode.valueOf(gameMode), gameRules, true, allowedPlayers, null,
             defaultMainPack, defaultBasePack, menuMaterial, 0
         );
         worldSettings.put(worldName, newSettings);
@@ -290,13 +293,11 @@ public class WorldConfig {
             
             // 加载允许进入的玩家列表
             String playersString = config.getString("players", "");
-            List<String> allowedPlayers = new ArrayList<>();
-            if (!playersString.isEmpty()) {
-                allowedPlayers.addAll(Arrays.asList(playersString.split(",")));
-                // 清理空白字符
-                allowedPlayers.replaceAll(String::trim);
-                allowedPlayers.removeIf(String::isEmpty);
-            }
+            List<PlayerInfo> allowedPlayers = loadPlayersFromConfig(playersString);
+            
+            // 加载所有者信息
+            String ownerString = config.getString("owner", "");
+            PlayerInfo owner = loadOwnerFromConfig(ownerString);
 
             // 加载游戏规则配置
             Map<GameRule<?>, Object> gameRules = new HashMap<>();
@@ -324,7 +325,7 @@ public class WorldConfig {
             String menuMaterial = config.getString("menu_material.material", "GRASS_BLOCK");
             int customModelData = config.getInt("menu_material.custom_model_data", 0);
             
-            worldSettings.put(worldName, new WorldSettings(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, mainResourcePack, baseResourcePack, menuMaterial, customModelData));
+            worldSettings.put(worldName, new WorldSettings(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, owner, mainResourcePack, baseResourcePack, menuMaterial, customModelData));
         } catch (Exception e) {
             System.err.println("加载世界配置失败: " + worldName + " - " + e.getMessage());
         }
@@ -364,7 +365,13 @@ public class WorldConfig {
         }
         
         // 检查玩家是否在允许列表中
-        return settings.allowedPlayers.isEmpty() || settings.allowedPlayers.contains(playerName);
+        if (settings.allowedPlayers.isEmpty()) {
+            return true;
+        }
+        
+        UUID playerUuid = getPlayerUUID(playerName);
+        return settings.allowedPlayers.stream()
+                .anyMatch(playerInfo -> playerInfo.getUuid().equals(playerUuid) || playerInfo.getName().equals(playerName));
     }
 
     public static void setWorldLoadStatus(String worldName, boolean load) {
@@ -373,7 +380,7 @@ public class WorldConfig {
             // 更新内存中的设置
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                settings.gamemode, settings.gameRules, load, settings.allowedPlayers,
+                settings.gamemode, settings.gameRules, load, settings.allowedPlayers, settings.owner,
                 settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -389,46 +396,55 @@ public class WorldConfig {
 
     public static void addPlayerToWorld(String worldName, String playerName) {
         WorldSettings settings = worldSettings.get(worldName);
-        if (settings != null && !settings.allowedPlayers.contains(playerName)) {
-            List<String> newPlayers = new ArrayList<>(settings.allowedPlayers);
-            newPlayers.add(playerName);
+        if (settings != null) {
+            UUID playerUuid = getPlayerUUID(playerName);
+            PlayerInfo newPlayerInfo = new PlayerInfo(playerUuid, playerName);
             
-            // 更新内存中的设置
+            // 检查玩家是否已在列表中
+            boolean playerExists = settings.allowedPlayers.stream()
+                    .anyMatch(playerInfo -> playerInfo.getUuid().equals(playerUuid));
+            
+            if (!playerExists) {
+                List<PlayerInfo> newPlayers = new ArrayList<>(settings.allowedPlayers);
+                newPlayers.add(newPlayerInfo);
+                
+                // 更新内存中的设置
                 WorldSettings newSettings = new WorldSettings(
                     settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                    settings.gamemode, settings.gameRules, settings.load, newPlayers,
+                    settings.gamemode, settings.gameRules, settings.load, newPlayers, settings.owner,
                     settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
                 );
-            worldSettings.put(worldName, newSettings);
-            
-            // 更新配置文件
-            FileConfiguration config = worldConfigs.get(worldName);
-            if (config != null) {
-                config.set("players", String.join(",", newPlayers));
-                saveWorldConfig(worldName, config);
+                worldSettings.put(worldName, newSettings);
+                
+                // 更新配置文件
+                savePlayerInfoToConfig(worldName, newSettings);
             }
         }
     }
 
     public static void removePlayerFromWorld(String worldName, String playerName) {
         WorldSettings settings = worldSettings.get(worldName);
-        if (settings != null && settings.allowedPlayers.contains(playerName)) {
-            List<String> newPlayers = new ArrayList<>(settings.allowedPlayers);
-            newPlayers.remove(playerName);
+        if (settings != null) {
+            UUID playerUuid = getPlayerUUID(playerName);
             
-            // 更新内存中的设置
-            WorldSettings newSettings = new WorldSettings(
-                settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                settings.gamemode, settings.gameRules, settings.load, newPlayers,
-                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
-            );
-            worldSettings.put(worldName, newSettings);
+            // 检查玩家是否在列表中
+            boolean playerExists = settings.allowedPlayers.stream()
+                    .anyMatch(playerInfo -> playerInfo.getUuid().equals(playerUuid) || playerInfo.getName().equals(playerName));
             
-            // 更新配置文件
-            FileConfiguration config = worldConfigs.get(worldName);
-            if (config != null) {
-                config.set("players", String.join(",", newPlayers));
-                saveWorldConfig(worldName, config);
+            if (playerExists) {
+                List<PlayerInfo> newPlayers = new ArrayList<>(settings.allowedPlayers);
+                newPlayers.removeIf(playerInfo -> playerInfo.getUuid().equals(playerUuid) || playerInfo.getName().equals(playerName));
+                
+                // 更新内存中的设置
+                WorldSettings newSettings = new WorldSettings(
+                    settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
+                    settings.gamemode, settings.gameRules, settings.load, newPlayers, settings.owner,
+                    settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
+                );
+                worldSettings.put(worldName, newSettings);
+                
+                // 更新配置文件
+                savePlayerInfoToConfig(worldName, newSettings);
             }
         }
     }
@@ -450,12 +466,20 @@ public class WorldConfig {
                 mainWorldName = org.bukkit.Bukkit.getWorlds().get(0).getName();
             }
             
-            List<String> allowedPlayers = new ArrayList<>();
+            List<PlayerInfo> allowedPlayers = new ArrayList<>();
+            PlayerInfo owner = null;
+            
             // 对于默认世界，允许所有玩家进入
             if (worldName.equals(mainWorldName) || worldName.equals(mainWorldName + "_nether") || worldName.equals(mainWorldName + "_the_end")) {
-                // 默认世界不限制玩家
+                // 默认世界不限制玩家，但仍需设置所有者
+                if (ownerName != null && !ownerName.isEmpty()) {
+                    UUID ownerUuid = getPlayerUUID(ownerName);
+                    owner = new PlayerInfo(ownerUuid, ownerName);
+                }
             } else {
-                allowedPlayers.add(ownerName);
+                UUID ownerUuid = getPlayerUUID(ownerName);
+                owner = new PlayerInfo(ownerUuid, ownerName);
+                allowedPlayers.add(owner);
             }
             
             // 根据世界类型确定资源包
@@ -509,7 +533,7 @@ public class WorldConfig {
             gameRules.put(GameRule.MAX_COMMAND_CHAIN_LENGTH, 65536);
             
             WorldSettings newSettings = new WorldSettings(
-                spawnX, spawnY, spawnZ, yaw, pitch, gameMode, gameRules, true, allowedPlayers,
+                spawnX, spawnY, spawnZ, yaw, pitch, gameMode, gameRules, true, allowedPlayers, owner,
                 mainResourcePack, baseResourcePack, defaultMenuMaterial, defaultCustomModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -527,14 +551,10 @@ public class WorldConfig {
             config.set("gamemode", gameMode.toString());
             config.set("load", true);
             
-            // 设置玩家和所有者信息
-            if (!allowedPlayers.isEmpty()) {
-                config.set("players", String.join(",", allowedPlayers));
-            } else {
-                config.set("players", ""); // 空字符串表示所有玩家都可以进入
-            }
+            worldConfigs.put(worldName, config);
             
-            config.set("owner", ownerName);
+            // 使用新方法保存玩家和所有者信息
+            savePlayerInfoToConfig(worldName, newSettings);
             
             // 设置描述和创建时间
             if (worldName.equals(mainWorldName)) {
@@ -562,7 +582,6 @@ public class WorldConfig {
             config.set("menu_material.material", defaultMenuMaterial);
             config.set("menu_material.custom_model_data", defaultCustomModelData);
             
-            worldConfigs.put(worldName, config);
             saveWorldConfig(worldName, config);
         }
     }
@@ -776,7 +795,7 @@ public class WorldConfig {
             // 更新内存中的设置
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers, settings.owner,
                 resourcePackKey, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -799,7 +818,7 @@ public class WorldConfig {
             // 更新内存中的设置
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers, settings.owner,
                 settings.mainResourcePack, resourcePackKey, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -830,6 +849,32 @@ public class WorldConfig {
     }
     
     /**
+     * 设置世界的所有者
+     */
+    public static void setWorldOwner(String worldName, String ownerName) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings != null) {
+            UUID ownerUuid = getPlayerUUID(ownerName);
+            PlayerInfo newOwner = new PlayerInfo(ownerUuid, ownerName);
+            
+            // 更新内存中的设置
+            WorldSettings newSettings = new WorldSettings(
+                settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers, newOwner,
+                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
+            );
+            worldSettings.put(worldName, newSettings);
+            
+            // 更新配置文件
+            FileConfiguration config = worldConfigs.get(worldName);
+            if (config != null) {
+                config.set("owner", ownerUuid.toString() + ":" + ownerName);
+                saveWorldConfig(worldName, config);
+            }
+        }
+    }
+    
+    /**
      * 设置世界的菜单材料
      */
     public static void setWorldMenuMaterial(String worldName, String material, int customModelData) {
@@ -838,7 +883,7 @@ public class WorldConfig {
             // 更新内存中的设置
             WorldSettings newSettings = new WorldSettings(
                 settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers, settings.owner,
                 settings.mainResourcePack, settings.baseResourcePack, material, customModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -892,7 +937,7 @@ public class WorldConfig {
         // 创建新的设置对象
         WorldSettings newSettings = new WorldSettings(
             settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
-            settings.gamemode, newGameRules, settings.load, settings.allowedPlayers,
+            settings.gamemode, newGameRules, settings.load, settings.allowedPlayers, settings.owner,
             settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
         );
         worldSettings.put(worldName, newSettings);
@@ -922,7 +967,7 @@ public class WorldConfig {
             // 更新内存中的设置
             WorldSettings newSettings = new WorldSettings(
                 x, y, z, yaw, pitch,
-                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers,
+                settings.gamemode, settings.gameRules, settings.load, settings.allowedPlayers, settings.owner,
                 settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
             );
             worldSettings.put(worldName, newSettings);
@@ -940,6 +985,44 @@ public class WorldConfig {
         }
     }
 
+    /**
+     * 玩家信息类，包含UUID和名称
+     */
+    public static class PlayerInfo {
+        private final UUID uuid;
+        private String name;
+        
+        public PlayerInfo(UUID uuid, String name) {
+            this.uuid = uuid;
+            this.name = name;
+        }
+        
+        public UUID getUuid() {
+            return uuid;
+        }
+        
+        public String getName() {
+            return name;
+        }
+        
+        public void setName(String name) {
+            this.name = name;
+        }
+        
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            PlayerInfo that = (PlayerInfo) obj;
+            return Objects.equals(uuid, that.uuid);
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hash(uuid);
+        }
+    }
+
     public static class WorldSettings {
         private final double x;
         private final double y;
@@ -949,25 +1032,26 @@ public class WorldConfig {
         private final GameMode gamemode;
         private final Map<GameRule<?>, Object> gameRules;
         private final boolean load;
-        private final List<String> allowedPlayers;
+        private final List<PlayerInfo> allowedPlayers;
+        private final PlayerInfo owner;
         private final String mainResourcePack;
         private final String baseResourcePack;
         private final String menuMaterial;
         private final int customModelData;
 
         public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
-                           Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers) {
-            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, null, null, "GRASS_BLOCK", 0);
+                           Map<GameRule<?>, Object> gameRules, boolean load, List<PlayerInfo> allowedPlayers, PlayerInfo owner) {
+            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, owner, null, null, "GRASS_BLOCK", 0);
         }
 
         public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
-                           Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers,
+                           Map<GameRule<?>, Object> gameRules, boolean load, List<PlayerInfo> allowedPlayers, PlayerInfo owner,
                            String mainResourcePack, String baseResourcePack) {
-            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, mainResourcePack, baseResourcePack, "GRASS_BLOCK", 0);
+            this(x, y, z, yaw, pitch, gamemode, gameRules, load, allowedPlayers, owner, mainResourcePack, baseResourcePack, "GRASS_BLOCK", 0);
         }
         
         public WorldSettings(double x, double y, double z, float yaw, float pitch, GameMode gamemode, 
-                           Map<GameRule<?>, Object> gameRules, boolean load, List<String> allowedPlayers,
+                           Map<GameRule<?>, Object> gameRules, boolean load, List<PlayerInfo> allowedPlayers, PlayerInfo owner,
                            String mainResourcePack, String baseResourcePack, String menuMaterial, int customModelData) {
             this.x = x;
             this.y = y;
@@ -978,6 +1062,7 @@ public class WorldConfig {
             this.gameRules = gameRules;
             this.load = load;
             this.allowedPlayers = new ArrayList<>(allowedPlayers);
+            this.owner = owner;
             this.mainResourcePack = mainResourcePack;
             this.baseResourcePack = baseResourcePack;
             this.menuMaterial = menuMaterial;
@@ -1000,12 +1085,26 @@ public class WorldConfig {
             return load;
         }
 
-        public List<String> getAllowedPlayers() {
+        public List<PlayerInfo> getAllowedPlayers() {
             return new ArrayList<>(allowedPlayers);
         }
         
         public List<String> getPlayers() {
-            return getAllowedPlayers();
+            return allowedPlayers.stream()
+                    .map(PlayerInfo::getName)
+                    .collect(java.util.stream.Collectors.toList());
+        }
+        
+        public PlayerInfo getOwner() {
+            return owner;
+        }
+        
+        public String getOwnerName() {
+            return owner != null ? owner.getName() : "";
+        }
+        
+        public UUID getOwnerUuid() {
+            return owner != null ? owner.getUuid() : null;
         }
 
         public String getMainResourcePack() {
@@ -1026,15 +1125,185 @@ public class WorldConfig {
     }
 
     /**
+     * 根据玩家名获取UUID
+     */
+    private static UUID getPlayerUUID(String playerName) {
+        Player player = Bukkit.getPlayer(playerName);
+        if (player != null) {
+            return player.getUniqueId();
+        }
+        // 如果玩家不在线，尝试从离线玩家获取
+        return Bukkit.getOfflinePlayer(playerName).getUniqueId();
+    }
+    
+    /**
+     * 根据UUID获取玩家名
+     */
+    private static String getPlayerName(UUID uuid) {
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            return player.getName();
+        }
+        // 如果玩家不在线，从离线玩家获取
+        return Bukkit.getOfflinePlayer(uuid).getName();
+    }
+    
+    /**
+     * 更新玩家名称（如果UUID对应的玩家名发生了变化）
+     */
+    public static void updatePlayerNames(String worldName) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings == null) return;
+        
+        boolean updated = false;
+        List<PlayerInfo> updatedPlayers = new ArrayList<>();
+        
+        // 更新允许玩家列表中的名称
+        for (PlayerInfo playerInfo : settings.getAllowedPlayers()) {
+            String currentName = getPlayerName(playerInfo.getUuid());
+            if (currentName != null && !currentName.equals(playerInfo.getName())) {
+                playerInfo.setName(currentName);
+                updated = true;
+            }
+            updatedPlayers.add(playerInfo);
+        }
+        
+        // 更新所有者名称
+        PlayerInfo updatedOwner = settings.getOwner();
+        if (updatedOwner != null) {
+            String currentOwnerName = getPlayerName(updatedOwner.getUuid());
+            if (currentOwnerName != null && !currentOwnerName.equals(updatedOwner.getName())) {
+                updatedOwner.setName(currentOwnerName);
+                updated = true;
+            }
+        }
+        
+        if (updated) {
+            // 创建新的设置对象
+            WorldSettings newSettings = new WorldSettings(
+                settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
+                settings.gamemode, settings.gameRules, settings.load, updatedPlayers, updatedOwner,
+                settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
+            );
+            worldSettings.put(worldName, newSettings);
+            
+            // 更新配置文件
+            savePlayerInfoToConfig(worldName, newSettings);
+        }
+    }
+    
+    /**
+     * 将玩家信息保存到配置文件
+     */
+    private static void savePlayerInfoToConfig(String worldName, WorldSettings settings) {
+        FileConfiguration config = worldConfigs.get(worldName);
+        if (config == null) return;
+        
+        // 保存玩家列表（格式：uuid:name,uuid:name）
+        List<String> playerEntries = new ArrayList<>();
+        for (PlayerInfo playerInfo : settings.getAllowedPlayers()) {
+            playerEntries.add(playerInfo.getUuid().toString() + ":" + playerInfo.getName());
+        }
+        config.set("players", String.join(",", playerEntries));
+        
+        // 保存所有者信息（格式：uuid:name）
+        if (settings.getOwner() != null) {
+            config.set("owner", settings.getOwner().getUuid().toString() + ":" + settings.getOwner().getName());
+        }
+        
+        saveWorldConfig(worldName, config);
+    }
+    
+    /**
+     * 从配置文件加载玩家信息
+     */
+    private static List<PlayerInfo> loadPlayersFromConfig(String playersString) {
+        List<PlayerInfo> players = new ArrayList<>();
+        if (playersString == null || playersString.trim().isEmpty()) {
+            return players;
+        }
+        
+        String[] playerEntries = playersString.split(",");
+        for (String entry : playerEntries) {
+            entry = entry.trim();
+            if (entry.isEmpty()) continue;
+            
+            if (entry.contains(":")) {
+                // 新格式：uuid:name
+                String[] parts = entry.split(":", 2);
+                try {
+                    UUID uuid = UUID.fromString(parts[0]);
+                    String name = parts[1];
+                    players.add(new PlayerInfo(uuid, name));
+                } catch (IllegalArgumentException e) {
+                    System.err.println("无效的UUID格式: " + parts[0]);
+                }
+            } else {
+                // 旧格式：仅玩家名，需要转换为UUID
+                try {
+                    UUID uuid = getPlayerUUID(entry);
+                    players.add(new PlayerInfo(uuid, entry));
+                } catch (Exception e) {
+                    System.err.println("无法获取玩家 " + entry + " 的UUID: " + e.getMessage());
+                }
+            }
+        }
+        
+        return players;
+    }
+    
+    /**
+     * 从配置文件加载所有者信息
+     */
+    private static PlayerInfo loadOwnerFromConfig(String ownerString) {
+        if (ownerString == null || ownerString.trim().isEmpty()) {
+            return null;
+        }
+        
+        if (ownerString.contains(":")) {
+            // 新格式：uuid:name
+            String[] parts = ownerString.split(":", 2);
+            try {
+                UUID uuid = UUID.fromString(parts[0]);
+                String name = parts[1];
+                return new PlayerInfo(uuid, name);
+            } catch (IllegalArgumentException e) {
+                System.err.println("无效的UUID格式: " + parts[0]);
+                return null;
+            }
+        } else {
+            // 旧格式：仅玩家名，需要转换为UUID
+            try {
+                UUID uuid = getPlayerUUID(ownerString);
+                return new PlayerInfo(uuid, ownerString);
+            } catch (Exception e) {
+                System.err.println("无法获取所有者 " + ownerString + " 的UUID: " + e.getMessage());
+                return null;
+            }
+        }
+    }
+    
+    /**
      * 检查玩家是否为世界拥有者
      */
     public static boolean isWorldOwner(String worldName, String playerName) {
-        FileConfiguration config = worldConfigs.get(worldName);
-        if (config == null) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings == null || settings.getOwner() == null) {
             return false;
         }
         
-        String owner = config.getString("owner", "");
-        return owner.equals(playerName);
+        // 首先检查UUID
+        UUID playerUuid = getPlayerUUID(playerName);
+        if (settings.getOwner().getUuid().equals(playerUuid)) {
+            return true;
+        }
+        
+        // 备用检查：比较名称
+        return settings.getOwner().getName().equals(playerName);
+    }
+
+    public static boolean isWorldConfigExists(String worldName) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isWorldConfigExists'");
     }
 }

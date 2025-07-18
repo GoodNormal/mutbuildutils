@@ -31,12 +31,12 @@ public class WorldPlayerMenu {
             return;
         }
 
-        List<String> allowedPlayers = settings.getAllowedPlayers();
+        List<WorldConfig.PlayerInfo> allowedPlayers = settings.getAllowedPlayers();
         // 移除世界所有者（自己）
         List<String> invitedPlayers = new ArrayList<>();
-        for (String playerName : allowedPlayers) {
-            if (!playerName.equals(viewer.getName())) {
-                invitedPlayers.add(playerName);
+        for (WorldConfig.PlayerInfo playerInfo : allowedPlayers) {
+            if (!playerInfo.getName().equals(viewer.getName())) {
+                invitedPlayers.add(playerInfo.getName());
             }
         }
 
