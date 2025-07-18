@@ -214,12 +214,18 @@ public class WorldConfig {
         config.set("resourcepack.main", defaultMainPack);
         config.set("resourcepack.base", defaultBasePack);
         
-        // 设置默认菜单材料配置 - 使用缩写
+        // 设置默认菜单材料配置 - 从世界名第一个下划线前提取
         String menuMaterialAbbreviation = "default";
         if (worldName.equals(mainWorldName + "_nether")) {
             menuMaterialAbbreviation = "nether";
         } else if (worldName.equals(mainWorldName + "_the_end")) {
             menuMaterialAbbreviation = "end";
+        } else {
+            // 从世界名第一个下划线前提取材料缩写
+            int underscoreIndex = worldName.indexOf('_');
+            if (underscoreIndex > 0) {
+                menuMaterialAbbreviation = worldName.substring(0, underscoreIndex);
+            }
         }
         
         config.set("menu_material", menuMaterialAbbreviation);
