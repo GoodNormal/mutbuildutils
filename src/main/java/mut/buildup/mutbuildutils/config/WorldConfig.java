@@ -148,7 +148,20 @@ public class WorldConfig {
         boolean doMobSpawning = true;
         boolean announceAdvancements = true;
         boolean doImmediateRespawn = false;
+        boolean doDaylightCycle = true;
+        boolean doWeatherCycle = true;
+        boolean doFireTick = true;
+        boolean mobGriefing = true;
+        boolean naturalRegeneration = true;
+        boolean showDeathMessages = true;
+        boolean commandBlockOutput = true;
+        boolean logAdminCommands = true;
+        boolean sendCommandFeedback = true;
+        boolean reducedDebugInfo = false;
         int spawnRadius = 10;
+        int randomTickSpeed = 3;
+        int maxEntityCramming = 24;
+        int maxCommandChainLength = 65536;
         
         if (worldName.equals(mainWorldName)) {
             // 主世界的特殊设置
@@ -161,11 +174,23 @@ public class WorldConfig {
         }
         
         config.set("gamerules.keepInventory", keepInventory);
-        config.set("gamerules.doDaylightCycle", true);
+        config.set("gamerules.doDaylightCycle", doDaylightCycle);
+        config.set("gamerules.doWeatherCycle", doWeatherCycle);
         config.set("gamerules.doMobSpawning", doMobSpawning);
         config.set("gamerules.announceAdvancements", announceAdvancements);
         config.set("gamerules.doImmediateRespawn", doImmediateRespawn);
+        config.set("gamerules.doFireTick", doFireTick);
+        config.set("gamerules.mobGriefing", mobGriefing);
+        config.set("gamerules.naturalRegeneration", naturalRegeneration);
+        config.set("gamerules.showDeathMessages", showDeathMessages);
+        config.set("gamerules.commandBlockOutput", commandBlockOutput);
+        config.set("gamerules.logAdminCommands", logAdminCommands);
+        config.set("gamerules.sendCommandFeedback", sendCommandFeedback);
+        config.set("gamerules.reducedDebugInfo", reducedDebugInfo);
         config.set("gamerules.spawnRadius", spawnRadius);
+        config.set("gamerules.randomTickSpeed", randomTickSpeed);
+        config.set("gamerules.maxEntityCramming", maxEntityCramming);
+        config.set("gamerules.maxCommandChainLength", maxCommandChainLength);
         
         // 设置资源包配置 - 从主配置文件读取默认世界资源包设置
         String defaultMainPack = "";
@@ -197,11 +222,23 @@ public class WorldConfig {
         List<String> allowedPlayers = new ArrayList<>(); // 空列表表示所有玩家都可以进入
         Map<GameRule<?>, Object> gameRules = new HashMap<>();
         gameRules.put(GameRule.KEEP_INVENTORY, keepInventory);
-        gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, true);
+        gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, doDaylightCycle);
+        gameRules.put(GameRule.DO_WEATHER_CYCLE, doWeatherCycle);
         gameRules.put(GameRule.DO_MOB_SPAWNING, doMobSpawning);
         gameRules.put(GameRule.ANNOUNCE_ADVANCEMENTS, announceAdvancements);
         gameRules.put(GameRule.DO_IMMEDIATE_RESPAWN, doImmediateRespawn);
+        gameRules.put(GameRule.DO_FIRE_TICK, doFireTick);
+        gameRules.put(GameRule.MOB_GRIEFING, mobGriefing);
+        gameRules.put(GameRule.NATURAL_REGENERATION, naturalRegeneration);
+        gameRules.put(GameRule.SHOW_DEATH_MESSAGES, showDeathMessages);
+        gameRules.put(GameRule.COMMAND_BLOCK_OUTPUT, commandBlockOutput);
+        gameRules.put(GameRule.LOG_ADMIN_COMMANDS, logAdminCommands);
+        gameRules.put(GameRule.SEND_COMMAND_FEEDBACK, sendCommandFeedback);
+        gameRules.put(GameRule.REDUCED_DEBUG_INFO, reducedDebugInfo);
         gameRules.put(GameRule.SPAWN_RADIUS, spawnRadius);
+        gameRules.put(GameRule.RANDOM_TICK_SPEED, randomTickSpeed);
+        gameRules.put(GameRule.MAX_ENTITY_CRAMMING, maxEntityCramming);
+        gameRules.put(GameRule.MAX_COMMAND_CHAIN_LENGTH, maxCommandChainLength);
         
         WorldSettings newSettings = new WorldSettings(
             defaultX, defaultY, defaultZ, defaultYaw, defaultPitch, 
@@ -456,8 +493,20 @@ public class WorldConfig {
             
             // 通用游戏规则
             gameRules.put(GameRule.DO_DAYLIGHT_CYCLE, true);
+            gameRules.put(GameRule.DO_WEATHER_CYCLE, true);
             gameRules.put(GameRule.DO_MOB_SPAWNING, worldName.equals(mainWorldName) ? true : false);
             gameRules.put(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            gameRules.put(GameRule.DO_FIRE_TICK, true);
+            gameRules.put(GameRule.MOB_GRIEFING, worldName.equals(mainWorldName) ? true : false);
+            gameRules.put(GameRule.NATURAL_REGENERATION, true);
+            gameRules.put(GameRule.SHOW_DEATH_MESSAGES, true);
+            gameRules.put(GameRule.COMMAND_BLOCK_OUTPUT, true);
+            gameRules.put(GameRule.LOG_ADMIN_COMMANDS, true);
+            gameRules.put(GameRule.SEND_COMMAND_FEEDBACK, true);
+            gameRules.put(GameRule.REDUCED_DEBUG_INFO, false);
+            gameRules.put(GameRule.RANDOM_TICK_SPEED, 3);
+            gameRules.put(GameRule.MAX_ENTITY_CRAMMING, 24);
+            gameRules.put(GameRule.MAX_COMMAND_CHAIN_LENGTH, 65536);
             
             WorldSettings newSettings = new WorldSettings(
                 spawnX, spawnY, spawnZ, yaw, pitch, gameMode, gameRules, true, allowedPlayers,
@@ -626,6 +675,20 @@ public class WorldConfig {
             world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
             world.setGameRule(GameRule.KEEP_INVENTORY, true);
             world.setGameRule(GameRule.ANNOUNCE_ADVANCEMENTS, false);
+            world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, true);
+            world.setGameRule(GameRule.DO_WEATHER_CYCLE, true);
+            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+            world.setGameRule(GameRule.DO_FIRE_TICK, true);
+            world.setGameRule(GameRule.MOB_GRIEFING, false);
+            world.setGameRule(GameRule.NATURAL_REGENERATION, true);
+            world.setGameRule(GameRule.SHOW_DEATH_MESSAGES, true);
+            world.setGameRule(GameRule.COMMAND_BLOCK_OUTPUT, true);
+            world.setGameRule(GameRule.LOG_ADMIN_COMMANDS, true);
+            world.setGameRule(GameRule.SEND_COMMAND_FEEDBACK, true);
+            world.setGameRule(GameRule.REDUCED_DEBUG_INFO, false);
+            world.setGameRule(GameRule.RANDOM_TICK_SPEED, 3);
+            world.setGameRule(GameRule.MAX_ENTITY_CRAMMING, 24);
+            world.setGameRule(GameRule.MAX_COMMAND_CHAIN_LENGTH, 65536);
         }
     }
 
@@ -796,6 +859,50 @@ public class WorldConfig {
     public static String getWorldMenuMaterial(String worldName) {
         WorldSettings settings = worldSettings.get(worldName);
         return settings != null ? settings.menuMaterial : "GRASS_BLOCK";
+    }
+    
+    /**
+     * 更新世界的游戏规则并同步到配置文件
+     */
+    public static void updateGameRule(String worldName, GameRule<?> gameRule, String newValue) {
+        WorldSettings settings = worldSettings.get(worldName);
+        if (settings == null) {
+            return;
+        }
+        
+        // 解析新值
+        Object parsedValue;
+        try {
+            if (gameRule.getType() == Boolean.class) {
+                parsedValue = Boolean.parseBoolean(newValue);
+            } else if (gameRule.getType() == Integer.class) {
+                parsedValue = Integer.parseInt(newValue);
+            } else {
+                parsedValue = newValue;
+            }
+        } catch (NumberFormatException e) {
+            System.err.println("无法解析游戏规则值: " + newValue + " for rule " + gameRule.getName());
+            return;
+        }
+        
+        // 更新内存中的游戏规则
+        Map<GameRule<?>, Object> newGameRules = new HashMap<>(settings.gameRules);
+        newGameRules.put(gameRule, parsedValue);
+        
+        // 创建新的设置对象
+        WorldSettings newSettings = new WorldSettings(
+            settings.x, settings.y, settings.z, settings.yaw, settings.pitch,
+            settings.gamemode, newGameRules, settings.load, settings.allowedPlayers,
+            settings.mainResourcePack, settings.baseResourcePack, settings.menuMaterial, settings.customModelData
+        );
+        worldSettings.put(worldName, newSettings);
+        
+        // 更新配置文件
+        FileConfiguration config = worldConfigs.get(worldName);
+        if (config != null) {
+            config.set("gamerules." + gameRule.getName(), parsedValue);
+            saveWorldConfig(worldName, config);
+        }
     }
     
     /**

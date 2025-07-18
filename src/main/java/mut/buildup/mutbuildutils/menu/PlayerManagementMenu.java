@@ -1,6 +1,7 @@
 package mut.buildup.mutbuildutils.menu;
 
 import mut.buildup.mutbuildutils.config.WorldConfig;
+import mut.buildup.mutbuildutils.MUTbuildUtils;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -56,6 +57,11 @@ public class PlayerManagementMenu {
         addNavigationButtons(inventory, page, totalPages);
         
         viewer.openInventory(inventory);
+        
+        // 延迟1秒刷新头颅纹理
+        Bukkit.getScheduler().runTaskLater(MUTbuildUtils.getInstance(), () -> {
+            refreshPlayerHeads(inventory, allPlayers, startIndex, endIndex, viewer.isOp());
+        }, 20L); // 20 ticks = 1秒
     }
     
     private static void fillBackground(Inventory inventory) {
@@ -257,5 +263,22 @@ public class PlayerManagementMenu {
 
     public static void openPlayerManagementMenu(Player player, int page) {
         openPlayerMenu(player, page);
+    }
+    
+    /**
+     * 刷新玩家头颅纹理
+     */
+    private static void refreshPlayerHeads(Inventory inventory, List<OfflinePlayer> allPlayers, int startIndex, int endIndex, boolean isViewerOp) {
+        int slot = 10; // 从第二行第二个位置开始
+        for (int i = startIndex; i < endIndex; i++) {
+            OfflinePlayer player = allPlayers.get(i);
+            ItemStack playerHead = createPlayerHead(player, isViewerOp);
+            inventory.setItem(slot, playerHead);
+            
+            slot++;
+            if (slot == 17) slot = 19; // 跳到下一行
+            if (slot == 26) slot = 28; // 跳到下一行
+            if (slot == 35) slot = 37; // 跳到下一行
+        }
     }
 }

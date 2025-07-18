@@ -11,6 +11,7 @@ import mut.buildup.mutbuildutils.config.ResourcePackConfig;
 import mut.buildup.mutbuildutils.listeners.WorldAccessListener;
 import mut.buildup.mutbuildutils.listeners.MenuListener;
 import mut.buildup.mutbuildutils.listeners.PlayerMenuListener;
+import mut.buildup.mutbuildutils.listeners.GameRuleListener;
 import mut.buildup.mutbuildutils.menu.OwnWorldMenuListener;
 import mut.buildup.mutbuildutils.menu.WorldPlayerMenuListener;
 import mut.buildup.mutbuildutils.world.WorldTemplateManager;
@@ -77,6 +78,7 @@ public final class MUTbuildUtils extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PlayerMenuListener(), this);
         getServer().getPluginManager().registerEvents(new OwnWorldMenuListener(), this);
         getServer().getPluginManager().registerEvents(new WorldPlayerMenuListener(), this);
+        getServer().getPluginManager().registerEvents(new GameRuleListener(), this);
         getServer().getPluginManager().registerEvents(new mut.buildup.mutbuildutils.listener.ResourcePackListener(), this);
         
         // 延迟自动加载配置中标记的世界

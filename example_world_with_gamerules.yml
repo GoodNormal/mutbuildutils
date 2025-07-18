@@ -1,0 +1,54 @@
+# 示例世界配置文件 - 展示完整的游戏规则配置
+# 此文件展示了修复后的游戏规则同步功能
+
+spawnpoint:
+  x: 0.0
+  y: 64.0
+  z: 0.0
+  yaw: 0.0
+  pitch: 0.0
+
+gamemode: CREATIVE
+load: true
+players: ""
+owner: "TestPlayer"
+description: "测试世界 - 包含完整游戏规则"
+created: "2024-01-01 12:00:00"
+
+# 完整的游戏规则配置 - 现在支持所有常用游戏规则
+gamerules:
+  # 基础游戏规则
+  keepInventory: true
+  doDaylightCycle: true
+  doWeatherCycle: true
+  doMobSpawning: false
+  announceAdvancements: false
+  doImmediateRespawn: true
+  
+  # 环境相关规则
+  doFireTick: true
+  mobGriefing: false
+  naturalRegeneration: true
+  
+  # 显示和反馈规则
+  showDeathMessages: true
+  commandBlockOutput: true
+  logAdminCommands: true
+  sendCommandFeedback: true
+  reducedDebugInfo: false
+  
+  # 数值型规则
+  spawnRadius: 0
+  randomTickSpeed: 3
+  maxEntityCramming: 24
+  maxCommandChainLength: 65536
+
+# 资源包配置
+resourcepack:
+  main: ""
+  base: "base"
+
+# 菜单材料配置
+menu_material:
+  material: "GRASS_BLOCK"
+  custom_model_data: 0
